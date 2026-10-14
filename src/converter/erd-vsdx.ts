@@ -380,13 +380,6 @@ function along(points: Point[], distance: number, reverse = false): Point {
   return path[path.length - 1]
 }
 
-// Table boxes (page inches, origin bottom-left) of the native layout, shared with the ERX export.
-export function layoutEntities(model: ErModel) {
-  validateModel(model)
-  const { pageWidth, pageHeight, boxes } = layout(model, model.entities.map(measure))
-  return { pageWidth, pageHeight, boxes }
-}
-
 export async function generateErVsdx(model: ErModel, title = 'ER Diagram'): Promise<Uint8Array> {
   validateModel(model)
   plainText(title, 200)

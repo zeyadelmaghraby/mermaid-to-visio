@@ -130,7 +130,6 @@ async function installCompletionGate(page: Page) {
       export { detectKind } from '/src/converter/diagram.ts';
       export { parseSequence } from '/src/converter/sequence.ts';
       export { parseEr } from '/src/converter/er.ts';
-      export { generateErx } from '/src/converter/erx.ts';
       async function hold(phase, result) {
         const gate = window.e2eGate;
         if (gate?.phase === phase) {
@@ -204,19 +203,6 @@ test('ER sample renders and downloads native Database Model Diagram entities glu
     expect(ends.map((connect) => connect['@_FromCell']).sort()).toEqual(['BeginX', 'EndX'])
     for (const end of ends) expect(['11', '12']).toContain(shapes.find((shape) => shape['@_ID'] === end['@_ToSheet'])?.['@_Master'])
   }
-
-  const erxEvent = page.waitForEvent('download')
-  await page.getByRole('button', { name: 'Download ERX', exact: true }).click()
-  const erx = await erxEvent
-  expect(erx.suggestedFilename()).toBe('SalesERD.erx')
-  const erxPath = resolve('test-results', 'SalesERD.erx')
-  await erx.saveAs(erxPath)
-  await expect(page.getByRole('status')).toHaveText('Database model downloaded: in Visio, Database > Import > ERwin ERX')
-  await expect(page.getByRole('list', { name: 'Export notes' })).toContainText('sales.Customer_Order_Summary_View')
-  const model = (await readFile(erxPath, 'latin1')).split('\r\n')
-  expect(model[0]).toBe('/* PLATINUM ERwin/ERX 3.5 */')
-  expect(model.filter((line) => /^\d+,"ET_(?:IE|DE)",0,/.test(line))).toHaveLength(8)
-  await assertLayout(page)
 })
 
 test('billing actor and explicit activations render and download a themed native Visio package and original source', async ({ page }, testInfo) => {

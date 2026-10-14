@@ -229,43 +229,6 @@ the reference schema, generated heights and line counts match exactly and
 tab stops are within 0.09 in. The page is sized to the content with 1-inch
 margins. The browser preview uses Mermaid's own ER layout.
 
-### Real database model (ERwin ERX)
-
-The `.vsdx` export uses the template's shapes, but its tables are free-form:
-they are not in the database add-on's model, so the Database tab and Database
-Properties do not manage them. For model-backed tables, **Download ERX** writes
-an ERwin 3.5 `.erx` file of the same Mermaid diagram, which Visio's own database
-engine imports. No database server or other installation is needed:
-
-1. In Visio Professional / Plan 2: **File > New > Database Model Diagram**
-   (cancel the Reverse Engineer wizard if it opens).
-2. **Database > Import > ERwin ERX** (Model group) and select the `.erx` file.
-   Progress and any warnings appear in the **Output** window.
-3. In **Tables and Views**, select all tables and drag them onto the page.
-   Visio draws them in the template style and connects their relationships;
-   arrange them, or right-click a table > **Show Related Tables**.
-
-The model carries tables (independent `ET_IE`, or dependent `ET_DE` when a
-parent's key is part of their primary key), every column with its physical
-type and NULL / NOT NULL, the primary key, alternate keys (`UK` / `U1`
-groups), relationships with their verb phrase, cardinality and optional or
-mandatory parent, and foreign keys migrated from the parent's primary key.
-Each relationship is bound to the child's FK group whose names match the
-parent's key (`Customer_Id` to `sales.Customers.Id`); if the child has no such
-columns they are added, as Visio does when a relationship is drawn, and listed
-under **Export notes**. A relationship is identifying exactly when its FK
-columns are part of the child's primary key. Views are not part of ERX and are
-listed in the notes. ERX is Windows-1252 text: names must use Latin characters.
-Visio ignores layout in ERX files, so the app's layout is only in the `.vsdx`.
-
-**Manual Visio gate for ERX (pending).** Import a downloaded `.erx` in
-Visio and confirm: no import errors in the Output window; every table, column,
-data type, NOT NULL, PK, FK and alternate key appears in Database Properties;
-relationships connect with the right cardinality; edits made in Database
-Properties update the shapes. Data types are written as in Mermaid
-(`nvarchar(35)`) against ERwin's generic ODBC target; how Visio maps them to the
-default driver must be confirmed in that first import.
-
 Regenerate the template assets from the reference ERD (never commit it):
 
 ```powershell
@@ -327,7 +290,7 @@ nonblank images, desktop/mobile layouts and the ER sample download. Mermaid is
 pinned because its sequence and ER DBs are version-specific. KaTeX is overridden to patched 0.18.2;
 rerun tests when updating these dependencies.
 
-Latest results (Node 22.23): 79 converter tests (52 sequence, 23 ER, 4 ERX), lint,
+Latest results (Node 22.23): 75 converter tests (52 sequence, 23 ER), lint,
 `tsc -b` and `vite build` all pass; the 11 browser workflows pass in Chrome
 (Edge was not available for the ER release run). No dependencies have changed
 since the earlier zero-finding audit.
