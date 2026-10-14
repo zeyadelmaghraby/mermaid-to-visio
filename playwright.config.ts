@@ -17,7 +17,8 @@ export default defineConfig({
   reporter: [['list'], ['html', { open: 'never' }]],
   use: {
     baseURL,
-    channel: 'msedge',
+    // Edge by default (the team's browser); PLAYWRIGHT_CHANNEL=chrome where Edge is not installed.
+    channel: process.env.PLAYWRIGHT_CHANNEL ?? 'msedge',
     viewport: { width: 1440, height: 1000 },
     acceptDownloads: true,
     screenshot: 'only-on-failure',

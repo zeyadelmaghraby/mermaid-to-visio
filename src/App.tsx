@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
-  ArrowDownToLine, Check, CircleAlert, Code2, FileInput, FilePlus2,
+  ArrowDownToLine, Check, CircleAlert, Code2, Database, FileInput, FilePlus2,
   Focus, LoaderCircle, LockKeyhole, Play, ScanLine, Trash2, ZoomIn, ZoomOut,
 } from 'lucide-react'
-import { generateVsdx, prepareDiagram } from './converter'
-import { SAMPLE_CODE } from './sample'
+import { detectKind, generateVsdx, prepareDiagram } from './converter'
+import { ER_SAMPLE_CODE, SAMPLE_CODE } from './sample'
 import './App.css'
 
 const SOURCE_LIMIT = 100_000
@@ -33,7 +33,7 @@ function safeFilename(value: string): string {
     .trim()
     .slice(0, 100)
   return !cleaned || /^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i.test(cleaned)
-    ? 'sequence-diagram' : cleaned
+    ? 'diagram' : cleaned
 }
 
 function downloadFile(blob: Blob, filename: string) {
@@ -136,6 +136,7 @@ function App() {
   const viewportRef = useRef<HTMLDivElement>(null)
   const current = preview !== null && preview.source === source && !error && !operation
   const filename = safeFilename(title)
+  const kind = detectKind(source)
 
   const prepareSnapshot = useCallback(async (snapshot: string, revision: number, request: number) => {
     setOperation('prepare')
@@ -143,7 +144,7 @@ function App() {
     setNotice('')
     const active = () => mountedRef.current && revision === revisionRef.current && request === requestRef.current
     try {
-      if (!snapshot.trim()) throw new Error('Enter sequence diagram source before preparing.')
+      if (!snapshot.trim()) throw new Error('Enter Mermaid source before preparing.')
       if (snapshot.length > SOURCE_LIMIT) throw new Error('Source exceeds the 100,000 character limit.')
       const diagram = await serializeConversion(async () => {
         if (!active()) return null
@@ -332,6 +333,8 @@ function App() {
                   onClick={() => fileInputRef.current?.click()}><FileInput size={17} aria-hidden="true" /></button>
                 <button type="button" className="icon-button" title="Load billing sample" aria-label="Load billing sample"
                   onClick={() => { changeSource(SAMPLE_CODE); changeTitle('CreateBillRequest'); setNotice('Sample loaded'); editorRef.current?.focus() }}><FilePlus2 size={17} aria-hidden="true" /></button>
+                <button type="button" className="icon-button" title="Load ER sample" aria-label="Load ER sample"
+                  onClick={() => { changeSource(ER_SAMPLE_CODE); changeTitle('SalesERD'); setNotice('ER sample loaded'); editorRef.current?.focus() }}><Database size={17} aria-hidden="true" /></button>
                 <button type="button" className="icon-button" title="Download source" aria-label="Download source" disabled={!source.trim()}
                   onClick={() => downloadFile(new Blob([sourceRef.current], { type: 'text/plain;charset=utf-8' }), `${filename}.mmd`)}><ArrowDownToLine size={17} aria-hidden="true" /></button>
                 <span className="toolbar-divider" />
@@ -341,10 +344,10 @@ function App() {
               <input ref={fileInputRef} className="visually-hidden" type="file" accept=".mmd,.txt,text/plain" tabIndex={-1} aria-label="Import source file"
                 onChange={(event) => { const file = event.target.files?.[0]; event.target.value = ''; void importFile(file) }} />
             </div>
-            <textarea ref={editorRef} className="source-editor" aria-label="Mermaid sequence diagram source" value={source}
+            <textarea ref={editorRef} className="source-editor" aria-label="Mermaid diagram source" value={source}
               maxLength={SOURCE_LIMIT} onChange={(event) => changeSource(event.target.value)} spellCheck={false}
               autoCapitalize="off" autoCorrect="off" wrap="off" />
-            <div className="editor-footer"><span>Mermaid / sequence</span><span>{source.length.toLocaleString()} / 100,000</span></div>
+            <div className="editor-footer"><span>{kind === 'er' ? 'Mermaid / ER' : kind === 'sequence' ? 'Mermaid / sequence' : 'Mermaid'}</span><span>{source.length.toLocaleString()} / 100,000</span></div>
           </section>
 
           <section id="preview-panel" className="preview-panel" aria-label="Diagram preview">
@@ -364,15 +367,17 @@ function App() {
             </div>
             <div ref={viewportRef} className="preview-viewport" aria-busy={operation === 'prepare'} tabIndex={0} aria-label="Scrollable diagram preview">
               {preview ? <div className="diagram-canvas" style={{ width: `max(100%, ${preview.width * scale + 48}px)`, height: `max(100%, ${preview.height * scale + 48}px)` }}>
-                <img src={preview.imageUrl} alt="Prepared Mermaid sequence diagram" width={preview.width * scale} height={preview.height * scale} draggable={false} />
+                <img src={preview.imageUrl} alt="Prepared Mermaid diagram" width={preview.width * scale} height={preview.height * scale} draggable={false} />
               </div> : <div className={`preview-empty ${error ? 'has-error' : ''}`}>
                 {operation === 'prepare' ? <LoaderCircle size={28} className="spin" aria-hidden="true" /> : error ? <CircleAlert size={28} aria-hidden="true" /> : <ScanLine size={28} aria-hidden="true" />}
                 <span>{operation === 'prepare' ? 'Preparing diagram' : error ? 'Preview unavailable' : source.trim() ? 'Preview not prepared' : 'No diagram'}</span>
               </div>}
             </div>
             <div className="preview-footer">
-              <span>{preview ? 'Sequence diagram' : 'Awaiting preview'}</span>
-              <span className="counts">{preview ? `${preview.model.participants.length} participants / ${preview.model.messages.length} messages / ${preview.model.frames.length} frames` : '-'}</span>
+              <span>{preview ? (preview.model.kind === 'er' ? 'ER diagram' : 'Sequence diagram') : 'Awaiting preview'}</span>
+              <span className="counts">{!preview ? '-' : preview.model.kind === 'er'
+                ? `${preview.model.entities.filter((entity) => !entity.view).length} tables / ${preview.model.entities.filter((entity) => entity.view).length} views / ${preview.model.relationships.length} relationships`
+                : `${preview.model.participants.length} participants / ${preview.model.messages.length} messages / ${preview.model.frames.length} frames`}</span>
             </div>
           </section>
         </div>

@@ -16,8 +16,9 @@ interface SequenceDB {
   getDestroyedActors(): Map<string, unknown>
 }
 
+// Mermaid's parser and renderer share global configuration: every diagram family runs through one queue.
 let queue: Promise<void> = Promise.resolve()
-function serialized<Result>(operation: () => Promise<Result>): Promise<Result> {
+export function serializedMermaid<Result>(operation: () => Promise<Result>): Promise<Result> {
   const result = queue.then(operation)
   queue = result.then(() => undefined, () => undefined)
   return result
@@ -114,11 +115,11 @@ async function parseUnlocked(source: string): Promise<SequenceModel> {
 }
 
 export function parseSequence(source: string): Promise<SequenceModel> {
-  return serialized(() => parseUnlocked(source))
+  return serializedMermaid(() => parseUnlocked(source))
 }
 
 export function prepareDiagram(source: string, renderId: string): Promise<{ svg: string; model: SequenceModel }> {
-  return serialized(async () => {
+  return serializedMermaid(async () => {
     if (!/^[A-Za-z][A-Za-z0-9_-]{0,79}$/.test(renderId)) throw new Error('Invalid render ID.')
     const model = await parseUnlocked(source)
     const { svg } = await mermaid.mermaidAPI.render(renderId, source)

@@ -1,0 +1,66 @@
+{
+  "reference": "A0FD84EBB3C1E3E3FD273D5E28BD1041E29B9CED297E97D3B186CBEDD87FAD6D",
+  "masters": [
+    {
+      "id": 2,
+      "nameU": "Tracking Text",
+      "rel": "rId1",
+      "file": "master1.xml"
+    },
+    {
+      "id": 4,
+      "nameU": "Dynamic Connector",
+      "rel": "rId2",
+      "file": "master2.xml"
+    },
+    {
+      "id": 5,
+      "nameU": "Optional",
+      "rel": "rId3",
+      "file": "master3.xml"
+    },
+    {
+      "id": 11,
+      "nameU": "Entity",
+      "rel": "rId5",
+      "file": "master5.xml"
+    },
+    {
+      "id": 12,
+      "nameU": "View",
+      "rel": "rId6",
+      "file": "master6.xml"
+    },
+    {
+      "id": 13,
+      "nameU": "Relationship",
+      "rel": "rId7",
+      "file": "master7.xml"
+    },
+    {
+      "id": 14,
+      "nameU": "Parent to category",
+      "rel": "rId8",
+      "file": "master8.xml"
+    },
+    {
+      "id": 15,
+      "nameU": "Category to child",
+      "rel": "rId9",
+      "file": "master9.xml"
+    }
+  ],
+  "files": {
+    "masters.xml": "CCD458F5582F47B496C0AA8295B560F6E3340FF16BDEA8CBACF4F19BA5BC4CCF",
+    "master1.xml": "B22F0741B855FAA83FF166DFA972DED1CEBE35DB1993CC74324F151EE52C9ACA",
+    "master2.xml": "5F63FEDAFF6FF8C21026230371D7426643A3220BD80DE98D0A0B05D213C0F13F",
+    "master3.xml": "FCC03E45B8116D2786F1F403E0A848B8035064100AE42B45ED935548B01863C0",
+    "master5.xml": "31ACB24F9D9B55C369A4879F6C1208C2973B9402DDD340118129260C7AD2FE6D",
+    "master6.xml": "1B008512060872341858426DF0D4829626FC0EC10B916FFBFB2C782A19110B61",
+    "master7.xml": "1DC815755FEDD96996E7D024DABD9C07FAADFDE84EDF100326E229BAA28B9E66",
+    "master8.xml": "33B3CB445579852647EE57B2730B3EBCE0E7114072F223D165736063E9F2135F",
+    "master9.xml": "01F18FA9ABC7899A172F1A7EE1317213DE12B12048823882B851C8716095AFE1",
+    "document.xml": "96F51DC7C33F8F91E238A142CA4A02BF6AD704AFB616C5CC7C890A4BA0892812",
+    "page.json": "A664AFFD161C928E2A03C7CFCA0FF2C9C10F4FBE1FD9B8D2C244164BF6C193FF"
+  }
+}

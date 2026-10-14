@@ -4,10 +4,10 @@ import { connectorLayer, pageSettings, referenceTheme as theme, semanticColor } 
 import nativeTheme from './reference-theme.xml?raw'
 import { MASTER, escapeXml, masterCell, masterConnectionRows, measureText, nativeTemplate, resolveInstance, type InstanceSpec, type Override, type ResolvedInstance } from './native'
 
-const NS = 'http://schemas.microsoft.com/office/visio/2012/main'
+export const NS = 'http://schemas.microsoft.com/office/visio/2012/main'
 const REL = 'http://schemas.openxmlformats.org/package/2006/relationships'
-const OFFICE_REL = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships'
-const VISIO_REL = 'http://schemas.microsoft.com/visio/2010/relationships/'
+export const OFFICE_REL = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships'
+export const VISIO_REL = 'http://schemas.microsoft.com/visio/2010/relationships/'
 // Native UML Activation and lifeline masters expose connection points every quarter inch.
 export const PITCH = 0.25
 const MAX_LIFELINE_POINTS = 100
@@ -52,13 +52,13 @@ function validateModel(model: SequenceModel) {
   })
 }
 
-function xmlDeclaration(body: string) {
+export function xmlDeclaration(body: string) {
   return `<?xml version='1.0' encoding='utf-8' ?>\n${body}`
 }
-function relationships(items: { id: string; type: string; target: string }[]) {
+export function relationships(items: { id: string; type: string; target: string }[]) {
   return xmlDeclaration(`<Relationships xmlns='${REL}'>${items.map((item) => `<Relationship Id='${item.id}' Type='${item.type}' Target='${item.target}'/>`).join('')}</Relationships>`)
 }
-const number = (value: number) => String(Number(value.toPrecision(15)))
+export const number = (value: number) => String(Number(value.toPrecision(15)))
 const v = (value: number | string, formula?: string): Override => ({ V: value, ...(formula ? { F: formula } : {}) })
 
 type Message = SequenceModel['messages'][number]

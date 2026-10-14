@@ -16,7 +16,7 @@ and cross marks are plain shapes, because the reference has no master for them.
 `par` uses the Alternative fragment with a `par` tag. Unsupported constructs
 (box, create/destroy, autonumber, rect, critical, break, metadata, directives)
 fail explicitly instead of being approximated. Other Mermaid diagram families
-remain out of scope.
+remain out of scope apart from ER diagrams (below).
 The preview is Mermaid-rendered; exported layout is independently computed and
 is not a pixel-identical reproduction of the preview.
 
@@ -156,3 +156,39 @@ works; dashed self-messages add only a local dash. Self labels start at the
 loop's outer edge, use the master's text margin, and are vertically centred.
 Visio COM confirmed glue only after a lifeline move, not after bar or endpoint
 edits. Mouse-dragging bars and endpoints remains a manual review gate.
+## ER Diagram Export
+
+Goal: AI-generated Mermaid `erDiagram` source becomes the team's classic Visio
+Database Model Diagram (Entity Relationship stencil, Relational crow's-foot
+notation), matching the look of the team's reference ERD.
+
+Decisions (with the solution architect, 2026-10-14):
+- Masters, styles and the page's database settings come from the shared
+  reference ERD (SHA256 `A0FD84EB...87FAD6D`), extracted by
+  `scripts/extract-erd-template.mjs`. The add-on's Database Model master embeds
+  the customer schema as an OLE object and is never shipped; neither are the
+  reference pages, docProps or thumbnail.
+- `NOT NULL` is a column comment keyword; PK columns are always bold.
+- The reference's red/green/orange change marks are tracking-only and are not
+  generated; every column exports as a plain row.
+- Views are explicit (`:::view`), never inferred from names.
+- Many-to-many relationships are rejected (physical ERDs need an associative table).
+- Generated entities are free-form (no model reference): the master's own
+  `ManualEdits` rule makes them text-editable and keeps the add-on out of them.
+  The template's add-on events are kept so the file opens as a Database Model
+  Diagram (Database tab). Model-backed generated tables were investigated and
+  set aside: the add-on model is an undocumented InfoModeler/ORM binary, the
+  team's Visio has no ERwin ERX Import, and SQL Server reverse engineering
+  needs an installation; the architect chose the simple paste-and-convert flow.
+
+Verification:
+- 23 ER unit tests: parser mapping/rejections, byte-identical masters, no
+  model/OLE/events/customer strings, native text/tab stops/PK separator,
+  crow's-foot ends and dash patterns from the master formulas, whole-shape glue
+  on entity edges, orthogonal paths, no table overlaps and no relationship
+  crossing an unrelated table (sample, a 20-table schema, LR direction).
+- Round trip of the reference schema (local only, not committed): 21 tables and
+  views, 12 relationships, 24 connects; heights and line counts identical,
+  widths within 0.1 in, tab stops within 0.09 in.
+- **Pending:** the README's manual Visio gate. Visio was not available, so
+  no repair-free open, editing or glue behaviour has been observed in Visio.
