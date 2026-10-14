@@ -214,9 +214,13 @@ dividers come from the master's own formulas and cached values. Generated
 entities carry no add-on model reference, so the master's own rule
 (`User.ManualEdits = User.RefShapeGuid=-1`) makes them free-form: designers edit
 names, columns and types directly in the shape text, and double-click does not
-call the database add-on. The add-on's model master (which embeds the reference
-schema) and its document-open hooks are not shipped; dropping new shapes from
-the Entity Relationship stencil still starts the add-on as usual. Relationships
+call the database add-on. The template's database add-on events are kept, so
+Visio opens the download as a Database Model Diagram (Database tab, Database
+Properties window, stencil). Generated tables are not entries in the add-on's
+model, so Database Properties does not list them; tables dropped from the
+Entity Relationship stencil are model tables as usual. The add-on's model
+master (which embeds the reference schema) is never shipped: its model is an
+undocumented binary format. Relationships
 are native Relationship instances glued to the whole parent and child entity
 (walking glue, as in the reference), so they follow moved tables.
 

@@ -1,4 +1,4 @@
-// Derives the generic Database Model Diagram template assets (stencil masters, styles, page settings)
+// Derives the generic Database Model Diagram template assets (stencil masters, styles, add-on events, page settings)
 // from the read-only reference ERD. Customer pages, the add-on's embedded model (Database Model master
 // and its OLE object), docProps and thumbnail are never read out.
 import { createHash } from 'node:crypto'
@@ -41,9 +41,10 @@ const filteredMasters = `${header}${masters.map((master) => master.element).join
 
 let documentXml = await read('visio/document.xml')
 documentXml = documentXml.replace(/TopPage='\d+'/, "TopPage='0'")
-// The add-on's document-open hooks look for the excluded model; generated drawings stay free-form.
-documentXml = documentXml.replace(/<EventList>[\s\S]*?<\/EventList>/, '')
-if (/<DocumentProperties|<EventList|<SolutionXML/.test(documentXml)) throw new Error('Document properties, events and solution data must be stripped.')
+// The database add-on's document events (DB Engineer /CMD=1, /CMD=2003) stay: they make Visio open the
+// drawing as a Database Model Diagram, with the Database tab, as files made from the template do.
+if (/<DocumentProperties|<SolutionXML/.test(documentXml)) throw new Error('Document properties and solution data must be stripped.')
+if ((documentXml.match(/<EventItem [^>]*Target='DB Engineer'/g) ?? []).length !== 3) throw new Error('Expected the template\'s three database add-on events.')
 
 // Page display settings of the database template (notation, layers), without the page's size, view or GUID.
 const pagesXml = await read('visio/pages/pages.xml')

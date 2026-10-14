@@ -93,7 +93,10 @@ describe('native Database Model Diagram package', () => {
     const files = Object.keys(zip.files).filter((name) => !zip.files[name].dir)
     expect(files.some((name) => /docProps|thumbnail|embeddings|media|oleObject|\.emf$|\.bin$/.test(name))).toBe(false)
     const document = await documentIn(zip, 'visio/document.xml')
-    expect(document.querySelector('EventList, SolutionXML, DocumentProperties')).toBeNull()
+    expect(document.querySelector('SolutionXML, DocumentProperties')).toBeNull()
+    // The template's database add-on events open the drawing as a Database Model Diagram (Database tab).
+    expect(Array.from(document.querySelectorAll('EventList > EventItem')).map((item) => [item.getAttribute('EventCode'), item.getAttribute('Target'), item.getAttribute('TargetArgs')]))
+      .toEqual([['2', 'DB Engineer', '/CMD=1'], ['1', 'DB Engineer', '/CMD=1'], ['1', 'DB Engineer', '/CMD=2003']])
     expect(Array.from(document.querySelectorAll('StyleSheet')).map((sheet) => sheet.getAttribute('NameU'))).toEqual(['No Style', 'Text Only', 'None', 'Normal', 'Guide', 'Theme', 'Connector'])
     expect(Array.from(document.querySelectorAll('FaceName')).map((face) => face.getAttribute('NameU'))).toEqual(['Calibri', 'Arial'])
     // Template parts carry only the stencil's own placeholder text, never the reference drawing's tables.

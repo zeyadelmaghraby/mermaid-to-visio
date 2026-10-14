@@ -174,9 +174,12 @@ Decisions (with the solution architect, 2026-10-14):
 - Views are explicit (`:::view`), never inferred from names.
 - Many-to-many relationships are rejected (physical ERDs need an associative table).
 - Generated entities are free-form (no model reference): the master's own
-  `ManualEdits` rule makes them text-editable and keeps the add-on out; the
-  add-on's document-open events are removed so opening a file never asks it to
-  find the missing model.
+  `ManualEdits` rule makes them text-editable and keeps the add-on out of them.
+  The template's add-on events are kept so the file opens as a Database Model
+  Diagram (Database tab). Model-backed generated tables were investigated and
+  set aside: the add-on model is an undocumented InfoModeler/ORM binary, the
+  team's Visio has no ERwin ERX Import, and SQL Server reverse engineering
+  needs an installation; the architect chose the simple paste-and-convert flow.
 
 Verification:
 - 23 ER unit tests: parser mapping/rejections, byte-identical masters, no
