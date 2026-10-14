@@ -1,0 +1,93 @@
+{
+  "reference": "FA5366E43261593B23651B47C7B3E138CA0425B79F2A77BD0CA09313B9CF4FD7",
+  "masters": [
+    {
+      "id": 2,
+      "nameU": "Actor lifeline",
+      "rel": "rId1",
+      "file": "master1.xml"
+    },
+    {
+      "id": 4,
+      "nameU": "Object lifeline",
+      "rel": "rId2",
+      "file": "master2.xml"
+    },
+    {
+      "id": 5,
+      "nameU": "Message",
+      "rel": "rId3",
+      "file": "master3.xml"
+    },
+    {
+      "id": 6,
+      "nameU": "Self Message",
+      "rel": "rId4",
+      "file": "master4.xml"
+    },
+    {
+      "id": 7,
+      "nameU": "Loop fragment",
+      "rel": "rId5",
+      "file": "master5.xml"
+    },
+    {
+      "id": 8,
+      "nameU": "Alternative fragment",
+      "rel": "rId6",
+      "file": "master6.xml"
+    },
+    {
+      "id": 9,
+      "nameU": "Interaction operand",
+      "rel": "rId7",
+      "file": "master7.xml"
+    },
+    {
+      "id": 10,
+      "nameU": "Asynchronous Message",
+      "rel": "rId8",
+      "file": "master8.xml"
+    },
+    {
+      "id": 11,
+      "nameU": "Return Message",
+      "rel": "rId9",
+      "file": "master9.xml"
+    },
+    {
+      "id": 14,
+      "nameU": "Other fragment",
+      "rel": "rId10",
+      "file": "master10.xml"
+    },
+    {
+      "id": 15,
+      "nameU": "Optional fragment",
+      "rel": "rId11",
+      "file": "master11.xml"
+    },
+    {
+      "id": 16,
+      "nameU": "Activation",
+      "rel": "rId12",
+      "file": "master12.xml"
+    }
+  ],
+  "files": {
+    "masters.xml": "A4E3583AFE060F79EFBE0F8BDA0AC868143FB417C70F443E399DB62E497329B1",
+    "master1.xml": "272C03EFDDE26352062E9400E49DB619F5039D4D177DCF5A7DD546BC72CE77F5",
+    "master2.xml": "E6EBD2FEB27C33B08DD9A21983E6F97BAE787268FCB91A038A03DA05D7514634",
+    "master3.xml": "39A11237E35617CFA40DA52A57489FD35DC35F1BE3AB00964DD0636F7FBB5F84",
+    "master4.xml": "390EB030543E25EAA98FD7FFD0EA454CCFCDC9EF7F7B9C1BFE05C059162FBAA9",
+    "master5.xml": "5AEF905AC519868D5361658E5098CE948E71F457345F498DC26B40DD33E5685E",
+    "master6.xml": "FC28E7D1542C4B879D1260EFDE18D3CAE0BD6CF9C3C1737CE5A6F3A514505B46",
+    "master7.xml": "3CF9833E940BF14946DBF90077F69E61F011C73D8E9C49D1A93F17701E5B39DE",
+    "master8.xml": "5D9F8FBC8F982C0DB28142F8725F5FEC3D3119909A3A923FBBEA273F4AEA0E8A",
+    "master9.xml": "12A767EBD7E17206801CAC6FDC38E0B39243205420750FFD5FEED94C351159DF",
+    "master10.xml": "0CE3FED2419CF718048F703CB11E078719D7EA35279EB5A3B473CAA021057F14",
+    "master11.xml": "8226652E8B2BDACC18136437B89C10B6CB9D768387A392E50D13A422F22295A3",
+    "master12.xml": "F63142A115AA77E4EFE1A2A03389E8DFC7D264BA2F9B26BBCD0F0AD39A070DE8",
+    "document.xml": "D477F161582B58C016F521D3DDD082EBAD4F3FEB110F8ED08D43A5F915350310"
+  }
+}
