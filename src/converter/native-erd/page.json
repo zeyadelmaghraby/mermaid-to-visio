@@ -1,0 +1,120 @@
+{
+  "cells": {
+    "ShdwOffsetX": {
+      "V": "0.1181102362204685",
+      "U": "MM"
+    },
+    "ShdwOffsetY": {
+      "V": "-0.1181102362204685",
+      "U": "MM"
+    },
+    "PageScale": {
+      "V": "0.03937007874015708",
+      "U": "MM"
+    },
+    "DrawingScale": {
+      "V": "0.03937007874015708",
+      "U": "MM"
+    },
+    "DrawingSizeType": {
+      "V": "0"
+    },
+    "DrawingScaleType": {
+      "V": "0"
+    },
+    "InhibitSnap": {
+      "V": "0"
+    },
+    "PageLockReplace": {
+      "V": "0",
+      "U": "BOOL"
+    },
+    "PageLockDuplicate": {
+      "V": "0",
+      "U": "BOOL"
+    },
+    "UIVisibility": {
+      "V": "0"
+    },
+    "ShdwType": {
+      "V": "1"
+    },
+    "ShdwObliqueAngle": {
+      "V": "0",
+      "U": "DEG"
+    },
+    "ShdwScaleFactor": {
+      "V": "1"
+    },
+    "DrawingResizeType": {
+      "V": "1"
+    },
+    "ResizePage": {
+      "V": "1"
+    },
+    "PlaceStyle": {
+      "V": "1"
+    },
+    "RouteStyle": {
+      "V": "1"
+    },
+    "PlaceDepth": {
+      "V": "1"
+    },
+    "LineJumpCode": {
+      "V": "0"
+    },
+    "LineToNodeX": {
+      "V": "0.1968503937007914",
+      "U": "MM"
+    },
+    "LineToNodeY": {
+      "V": "0.1968503937007914",
+      "U": "MM"
+    },
+    "BlockSizeX": {
+      "V": "0.3937007874015709",
+      "U": "MM"
+    },
+    "BlockSizeY": {
+      "V": "0.3937007874015709",
+      "U": "MM"
+    },
+    "AvenueSizeX": {
+      "V": "0.7874015748031495",
+      "U": "MM"
+    },
+    "AvenueSizeY": {
+      "V": "0.7874015748031495",
+      "U": "MM"
+    },
+    "LineToLineX": {
+      "V": "0.1574803149606299",
+      "U": "MM"
+    },
+    "LineToLineY": {
+      "V": "0.1574803149606299",
+      "U": "MM"
+    },
+    "LineAdjustFrom": {
+      "V": "2"
+    },
+    "LineAdjustTo": {
+      "V": "2"
+    },
+    "XRulerOrigin": {
+      "V": "15.53543307086614"
+    },
+    "YRulerOrigin": {
+      "V": "22.38582677165354"
+    },
+    "XGridOrigin": {
+      "V": "15.53543307086614"
+    },
+    "YGridOrigin": {
+      "V": "22.38582677165354"
+    }
+  },
+  "user": "<Section N='User'><Row N='DBNotation'><Cell N='Value' V='2'/><Cell N='Prompt' V='0 = IDEF1X, 2 = Relational'/></Row><Row N='DBCrowsFoot'><Cell N='Value' V='1'/><Cell N='Prompt' V='Overrides the relationship notation specifed by the IDEF1X or Relational notations.'/></Row><Row N='DBHideDiscriminator'><Cell N='Value' V='1' U='BOOL'/><Cell N='Prompt' V='Set to hide category discriminators.'/></Row><Row N='DBHideAnnotations'><Cell N='Value' V='0'/><Cell N='Prompt' V='Set to hide PK, FK, and Index annotations within Entities.'/></Row><Row N='DBHidePKRow'><Cell N='Value' V='0'/><Cell N='Prompt' V='Set to Hide Primary Key section within Entities.'/></Row><Row N='DBHideTypes'><Cell N='Value' V='0'/><Cell N='Prompt' V='Set to hide Datatypes section within Entities.'/></Row><Row N='DBHideVerticalLines'><Cell N='Value' V='0' U='BOOL'/><Cell N='Prompt' V='Set to hide the vertical lines that seperate the Annotation and Datatype sections within Entities.'/></Row><Row N='DBHideHorizontalLine'><Cell N='Value' V='0' U='BOOL'/><Cell N='Prompt' V='Set to hide the horizontal line that seperates the PK section from the other columns of an Entity.'/></Row><Row N='ManualEdits'><Cell N='Value' V='0'/><Cell N='Prompt' V=''/></Row><Row N='visNavType'><Cell N='Value' V='1'/><Cell N='Prompt' V='' F='No Formula'/></Row></Section>",
+  "layers": "<Section N='Layer'><Row IX='0'><Cell N='Name' V='Relationships'/><Cell N='Color' V='255'/><Cell N='Status' V='0'/><Cell N='Visible' V='1'/><Cell N='Print' V='1'/><Cell N='Active' V='0'/><Cell N='Lock' V='0'/><Cell N='Snap' V='1'/><Cell N='Glue' V='1'/><Cell N='NameUniv' V='Relationships'/><Cell N='ColorTrans' V='0'/></Row><Row IX='1'><Cell N='Name' V='Entities'/><Cell N='Color' V='255'/><Cell N='Status' V='0'/><Cell N='Visible' V='1'/><Cell N='Print' V='1'/><Cell N='Active' V='0'/><Cell N='Lock' V='0'/><Cell N='Snap' V='1'/><Cell N='Glue' V='1'/><Cell N='NameUniv' V='Entities'/><Cell N='ColorTrans' V='0'/></Row><Row IX='2'><Cell N='Name' V='Categories'/><Cell N='Color' V='255'/><Cell N='Status' V='0'/><Cell N='Visible' V='1'/><Cell N='Print' V='1'/><Cell N='Active' V='0'/><Cell N='Lock' V='0'/><Cell N='Snap' V='1'/><Cell N='Glue' V='1'/><Cell N='NameUniv' V='Categories'/><Cell N='ColorTrans' V='0'/></Row></Section>"
+}

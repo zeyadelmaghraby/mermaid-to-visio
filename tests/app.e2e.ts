@@ -3,11 +3,11 @@ import { mkdir, readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import JSZip from 'jszip'
 import { XMLParser, XMLValidator } from 'fast-xml-parser'
-import { SAMPLE_CODE } from '../src/sample'
+import { ER_SAMPLE_CODE, SAMPLE_CODE } from '../src/sample'
 import { referenceTheme } from '../src/converter/theme'
 
-const sourceName = 'Mermaid sequence diagram source'
-const imageName = 'Prepared Mermaid sequence diagram'
+const sourceName = 'Mermaid diagram source'
+const imageName = 'Prepared Mermaid diagram'
 const sampleCounts = '7 participants / 21 messages / 2 frames'
 
 type VisioCell = { '@_N': string; '@_V': string | number }
@@ -126,9 +126,10 @@ type GateWindow = Window & {
 async function installCompletionGate(page: Page) {
   await page.route('**/src/converter/index.ts*', async (route) => {
     await route.fulfill({ contentType: 'application/javascript', body: `
-      import { prepareDiagram as realPrepare } from '/src/converter/sequence.ts';
-      import { generateVsdx as realGenerate } from '/src/converter/vsdx.ts';
+      import { prepareDiagram as realPrepare, generateVsdx as realGenerate } from '/src/converter/diagram.ts';
+      export { detectKind } from '/src/converter/diagram.ts';
       export { parseSequence } from '/src/converter/sequence.ts';
+      export { parseEr } from '/src/converter/er.ts';
       async function hold(phase, result) {
         const gate = window.e2eGate;
         if (gate?.phase === phase) {
@@ -155,6 +156,54 @@ async function releaseGate(page: Page) {
   await page.waitForFunction(() => (window as GateWindow).e2eGate?.released === true)
   await page.evaluate(() => new Promise<void>((done) => requestAnimationFrame(() => requestAnimationFrame(() => done()))))
 }
+
+test('ER sample renders and downloads native Database Model Diagram entities glued by relationships', async ({ page }, testInfo) => {
+  await ready(page)
+  await page.getByRole('button', { name: 'Load ER sample', exact: true }).click()
+  await expect(page.getByRole('textbox', { name: sourceName })).toHaveValue(ER_SAMPLE_CODE)
+  await expect(page.getByText('Mermaid / ER', { exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'Prepare preview', exact: true }).click()
+  await expect(page.getByRole('status')).toHaveText('Preview ready')
+  await expect(page.getByText('8 tables / 1 views / 8 relationships', { exact: true })).toBeVisible()
+  await expect(page.getByText('ER diagram', { exact: true })).toBeVisible()
+  await assertRenderedImage(page)
+  await assertLayout(page)
+  await screenshot(page, testInfo, 'er-desktop-1440.png')
+
+  const visioEvent = page.waitForEvent('download')
+  await page.getByRole('button', { name: 'Download Visio', exact: true }).click()
+  const visio = await visioEvent
+  expect(visio.suggestedFilename()).toBe('SalesERD.vsdx')
+  const artifact = resolve('test-results', 'SalesERD.vsdx')
+  await mkdir(resolve('test-results'), { recursive: true })
+  await visio.saveAs(artifact)
+  await expect(page.getByRole('status')).toHaveText('Visio file downloaded')
+  await testInfo.attach('native-erd-download', { path: artifact, contentType: 'application/vnd.ms-visio.drawing' })
+
+  const zip = await JSZip.loadAsync(await readFile(artifact))
+  const files = Object.keys(zip.files).filter((name) => !zip.files[name].dir)
+  expect(files.every((name) => /\.(?:xml|rels)$/.test(name)), 'No embedded model, image or media parts').toBe(true)
+  for (const name of files) expect(XMLValidator.validate(await zip.file(name)!.async('string')), name).toBe(true)
+  const manifest = JSON.parse(await readFile(resolve('src/converter/native-erd/manifest.json'), 'utf8')) as { masters: { id: number; nameU: string; file: string }[] }
+  for (const master of manifest.masters) {
+    expect(await zip.file(`visio/masters/${master.file}`)?.async('string'), `${master.nameU} master part is the original asset`)
+      .toBe(await readFile(resolve('src/converter/native-erd', master.file), 'utf8'))
+  }
+  const parsed = new XMLParser({ ignoreAttributes: false }).parse(await zip.file('visio/pages/page1.xml')!.async('string'))
+  const shapes = parsed.PageContents.Shapes.Shape as (VisioShape & { '@_Master': string })[]
+  const id = (nameU: string) => String(manifest.masters.find((master) => master.nameU === nameU)!.id)
+  expect(shapes.filter((shape) => shape['@_Master'] === id('Entity'))).toHaveLength(8)
+  expect(shapes.filter((shape) => shape['@_Master'] === id('View'))).toHaveLength(1)
+  const relationships = shapes.filter((shape) => shape['@_Master'] === id('Relationship'))
+  expect(relationships).toHaveLength(8)
+  const connects = parsed.PageContents.Connects.Connect as { '@_FromSheet': string; '@_ToSheet': string; '@_FromCell': string }[]
+  expect(connects).toHaveLength(16)
+  for (const relationship of relationships) {
+    const ends = connects.filter((connect) => connect['@_FromSheet'] === relationship['@_ID'])
+    expect(ends.map((connect) => connect['@_FromCell']).sort()).toEqual(['BeginX', 'EndX'])
+    for (const end of ends) expect(['11', '12']).toContain(shapes.find((shape) => shape['@_ID'] === end['@_ToSheet'])?.['@_Master'])
+  }
+})
 
 test('billing actor and explicit activations render and download a themed native Visio package and original source', async ({ page }, testInfo) => {
   await ready(page)
@@ -289,7 +338,7 @@ test('long IBAN verification activations download with instance-extended native 
 })
 
 for (const scenario of [
-  { name: 'flowchart', source: 'flowchart TD\nA-->B', error: /Only sequenceDiagram is supported\./ },
+  { name: 'flowchart', source: 'flowchart TD\nA-->B', error: /Only sequenceDiagram and erDiagram are supported\./ },
   { name: 'invalid Mermaid', source: 'sequenceDiagram\nA->>B', error: /Parse error|Expecting|Lexical error/i },
   { name: 'unsupported box', source: 'sequenceDiagram\nbox Group\nparticipant A\nparticipant B\nend\nA->>B: hello', error: /Box.*unsupported\./i },
 ]) {

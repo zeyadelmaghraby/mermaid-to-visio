@@ -14,13 +14,32 @@ import master10 from './native/master10.xml?raw'
 import master11 from './native/master11.xml?raw'
 import master12 from './native/master12.xml?raw'
 import manifest from './native/manifest.json'
+import erdMastersXml from './native-erd/masters.xml?raw'
+import erdDocumentXml from './native-erd/document.xml?raw'
+import erdMaster1 from './native-erd/master1.xml?raw'
+import erdMaster2 from './native-erd/master2.xml?raw'
+import erdMaster3 from './native-erd/master3.xml?raw'
+import erdMaster5 from './native-erd/master5.xml?raw'
+import erdMaster6 from './native-erd/master6.xml?raw'
+import erdMaster7 from './native-erd/master7.xml?raw'
+import erdMaster8 from './native-erd/master8.xml?raw'
+import erdMaster9 from './native-erd/master9.xml?raw'
+import erdManifest from './native-erd/manifest.json'
 
 export const MASTER = { ActorLifeline: 2, ObjectLifeline: 4, Message: 5, SelfMessage: 6, Loop: 7, Alternative: 8, Operand: 9,
   Async: 10, Return: 11, Other: 14, Optional: 15, Activation: 16 } as const
 const contents: Record<string, string> = { 'master1.xml': master1, 'master2.xml': master2, 'master3.xml': master3, 'master4.xml': master4,
   'master5.xml': master5, 'master6.xml': master6, 'master7.xml': master7, 'master8.xml': master8, 'master9.xml': master9,
   'master10.xml': master10, 'master11.xml': master11, 'master12.xml': master12 }
-export const nativeTemplate = { mastersXml, documentXml, masters: manifest.masters.map((master) => ({ ...master, xml: contents[master.file] })) }
+export interface NativeTemplate { key: string; mastersXml: string; documentXml: string; masters: { id: number; nameU: string; rel: string; file: string; xml: string }[] }
+export const nativeTemplate: NativeTemplate = { key: 'sequence', mastersXml, documentXml, masters: manifest.masters.map((master) => ({ ...master, xml: contents[master.file] })) }
+
+// Database Model Diagram (Entity Relationship stencil) masters derived from the reference ERD.
+export const ERD_MASTER = { Entity: 11, View: 12, Relationship: 13 } as const
+const erdContents: Record<string, string> = { 'master1.xml': erdMaster1, 'master2.xml': erdMaster2, 'master3.xml': erdMaster3, 'master5.xml': erdMaster5,
+  'master6.xml': erdMaster6, 'master7.xml': erdMaster7, 'master8.xml': erdMaster8, 'master9.xml': erdMaster9 }
+export const erdTemplate: NativeTemplate = { key: 'erd', mastersXml: erdMastersXml, documentXml: erdDocumentXml,
+  masters: erdManifest.masters.map((master) => ({ ...master, xml: erdContents[master.file] })) }
 
 type Location = { section?: string; sectionIX?: number; row?: string; rowIsIX?: boolean; rowT?: string; cell: string }
 interface CellRecord { key: string; location: Location; V: string; F?: string }
@@ -69,19 +88,19 @@ function readSheet(shape: RawShape): MasterSheet {
   return sheet
 }
 
-const masterSheets = new Map<number, MasterSheet>()
-function masterSheet(master: number): MasterSheet {
-  let sheet = masterSheets.get(master)
+const masterSheets = new Map<string, MasterSheet>()
+function masterSheet(master: number, template = nativeTemplate): MasterSheet {
+  let sheet = masterSheets.get(`${template.key}:${master}`)
   if (!sheet) {
-    const entry = nativeTemplate.masters.find((candidate) => candidate.id === master)
+    const entry = template.masters.find((candidate) => candidate.id === master)
     if (!entry) throw new Error(`Unknown native master ${master}.`)
     sheet = readSheet(parser.parse(entry.xml).MasterContents.Shapes.Shape[0])
-    masterSheets.set(master, sheet)
+    masterSheets.set(`${template.key}:${master}`, sheet)
   }
   return sheet
 }
-export function masterCell(master: number, key: string): CellRecord | undefined {
-  return masterSheet(master).cells.get(key)
+export function masterCell(master: number, key: string, template = nativeTemplate): CellRecord | undefined {
+  return masterSheet(master, template).cells.get(key)
 }
 
 // ShapeSheet formula subset used by the UML Sequence masters.
@@ -148,10 +167,12 @@ function normalizeReference(name: string): string {
   return upper
 }
 
-export interface SheetSpec { cells?: Record<string, Override>; text?: string }
+// text is the plain content used for measurement; textXml (already escaped, with cp/pp/tp run markers) replaces it in the file.
+// rows appends instance-only rows inside a section, keyed 'Section|IX' (for example 'Character|0' or 'Geometry|0').
+export interface SheetSpec { cells?: Record<string, Override>; text?: string; textXml?: string; rows?: Record<string, string> }
 // Instance-only Connection rows appended after the master's rows (no master row to inherit from): explicit X/Y formulas.
 export interface ConnectionRow { X: string; Y: string }
-export interface InstanceSpec extends SheetSpec { id: number; master: number; nameU?: string; sub?: Record<number, SheetSpec>; listOrder?: number; connectionRows?: ConnectionRow[] }
+export interface InstanceSpec extends SheetSpec { id: number; master: number; template?: NativeTemplate; nameU?: string; sub?: Record<number, SheetSpec>; listOrder?: number; connectionRows?: ConnectionRow[] }
 export interface ResolvedInstance { spec: InstanceSpec; value(key: string, subId?: number): number; point(row: number): [number, number]; childIds: Map<number, number>; xml(): string }
 
 const PLACEMENT = /^(?:PINX|PINY|WIDTH|HEIGHT|LOCPINX|LOCPINY|ANGLE|BEGINX|BEGINY|ENDX|ENDY|CONNECTIONS\..+)$/
@@ -165,8 +186,8 @@ export function measureText(text: string, size: number, wrapWidth = Infinity, ma
 }
 
 const connectionRowCount = (master: MasterSheet) => new Set([...master.cells.values()].filter((record) => record.location.section === 'Connection').map((record) => record.location.row)).size
-export function masterConnectionRows(master: number): number {
-  return connectionRowCount(masterSheet(master))
+export function masterConnectionRows(master: number, template = nativeTemplate): number {
+  return connectionRowCount(masterSheet(master, template))
 }
 
 function appendedConnections(master: MasterSheet, spec: InstanceSpec): Map<string, CellRecord> {
@@ -283,6 +304,8 @@ function evaluator(master: MasterSheet, spec: InstanceSpec) {
           case 'ABS': return Math.abs(num(0))
           case 'SQRT': return Math.sqrt(num(0))
           case 'ATAN2': return Math.atan2(num(0), num(1))
+          case 'COS': return Math.cos(num(0))
+          case 'SIN': return Math.sin(num(0))
           case 'INT': return Math.floor(num(0))
           case 'ROUND': return Number(num(0).toFixed(num(1)))
           case 'MODULUS': { const a = num(0), b = num(1); return a - b * Math.floor(a / b) }
@@ -363,15 +386,22 @@ function sheetXml(master: MasterSheet, spec: SheetSpec, values: (key: string) =>
       xml += `<Row${location.rowT ? ` T='${location.rowT}'` : ''} ${location.rowIsIX ? 'IX' : 'N'}='${escape(row)}'>${rowEntries.map(cellXml).join('')}</Row>`
     }
     if (name === 'Connection') xml += appendedRows
+    xml += spec.rows?.[id] ?? ''
     xml += '</Section>'
   }
   if (appendedRows && !sections.has('Connection|0')) xml += `<Section N='Connection'>${appendedRows}</Section>`
-  if (spec.text !== undefined) xml += `<Text>${escape(spec.text)}</Text>`
+  for (const [id, rows] of Object.entries(spec.rows ?? {})) {
+    if (sections.has(id)) continue
+    const [name, sectionIX] = id.split('|')
+    xml += `<Section N='${name}'${name === 'Geometry' ? ` IX='${sectionIX}'` : ''}>${rows}</Section>`
+  }
+  if (spec.textXml !== undefined) xml += `<Text>${spec.textXml}</Text>`
+  else if (spec.text !== undefined) xml += `<Text>${escape(spec.text)}</Text>`
   return xml + extra
 }
 
 export function resolveInstance(spec: InstanceSpec, nextId: () => number): ResolvedInstance {
-  const master = masterSheet(spec.master)
+  const master = masterSheet(spec.master, spec.template)
   const { cell, appended } = evaluator(master, spec)
   const childIds = new Map(master.children.map((child) => [child.id, nextId()]))
   const value = (key: string, subId = master.id) => {

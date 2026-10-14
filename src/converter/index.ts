@@ -1,3 +1,6 @@
-export { parseSequence, prepareDiagram } from './sequence'
+export { parseSequence } from './sequence'
 export type { SequenceModel } from './sequence'
-export { generateVsdx } from './vsdx'
+export { parseEr } from './er'
+export type { ErModel } from './er'
+export { detectKind, generateVsdx, prepareDiagram } from './diagram'
+export type { DiagramKind, DiagramModel } from './diagram'

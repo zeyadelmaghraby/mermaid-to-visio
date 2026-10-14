@@ -1,7 +1,7 @@
 # Mermaid to Visio
 
-A local-first team workspace converting Mermaid sequence diagrams into native,
-editable Microsoft Visio `.vsdx` files. Visio is not required for conversion;
+A local-first team workspace converting Mermaid sequence diagrams and ER
+diagrams into native, editable Microsoft Visio `.vsdx` files. Visio is not required for conversion;
 Microsoft Visio is required to edit downloaded files in Visio.
 
 ## Run Locally
@@ -20,10 +20,11 @@ npm run dev -- --host 127.0.0.1
 ```
 
 Paste source or import `.mmd`/`.txt`, name the diagram, select **Prepare
-preview**, then **Download Visio**. Editing source invalidates export until
+preview**, then **Download Visio**. The first statement (`sequenceDiagram` or
+`erDiagram`) selects the converter; the toolbar loads a sample of each. Editing source invalidates export until
 prepared again. Source can also be downloaded as `.mmd`.
 
-## Supported Syntax
+## Supported Syntax (Sequence Diagrams)
 
 Every exported object uses one of the 12 UML Sequence masters copied byte-for-byte
 from the reference drawing (SHA256s in `src/converter/native/manifest.json`),
@@ -160,6 +161,94 @@ uses the unified native-shape standard; arbitrary diagrams are not pixel copies
 of the hand-positioned reference. Review downloads before customer delivery,
 especially long labels, Arabic/bilingual text, and printing.
 
+## ER Diagrams (Database Model Diagram)
+
+`erDiagram` exports to the classic Visio **Database Model Diagram** template
+(Entity Relationship stencil, Relational notation with crow's feet). The Entity,
+View and Relationship masters, the document styles and the page's database
+display settings and layers are copied byte-for-byte from the team's reference
+ERD (SHA256s in `src/converter/native-erd/manifest.json`); nothing from that
+drawing's tables is shipped.
+
+| Mermaid | Visio export |
+| --- | --- |
+| entity, or `ID["schema.Table"]` alias | Entity master: grey header, then PK compartment, separator line, other columns |
+| entity with `:::view` (or `class ID view`) | View master: name and type columns, no key column |
+| `type name` attribute | one row: key indicator, name, physical type (`nvarchar(35)`, `decimal(18,4)`, `nvarchar(max)` ...) |
+| `PK` | listed first, above the separator; name bold and underlined; indicator `PK` |
+| `FK`, `UK` | indicators `FK1`, `FK2` ... and `U1`, `U2` ... numbered per table in source order |
+| comment `"FK2"` / `"U1"` on an `FK` / `UK` column | explicit group number, e.g. a composite unique index |
+| comment `"NOT NULL"` | bold row (PK rows are always bold); other rows are regular |
+| `\|\|` / `\|o` at the parent end | Relationship begin end: exactly one / zero or one |
+| `\|\|`, `\|o`, `\|{`, `o{` at the child end | Relationship end: one, zero or one, one or more, zero or more |
+| `--` / `..` | identifying (solid) / non-identifying (dashed) relationship |
+| relationship label | kept as the relationship's text, hidden like the template's unlabelled lines |
+| `direction TB` (default) / `direction LR` | parents above / left of their children |
+
+The parent is whichever end is single (`||` or `|o`), regardless of writing
+order. Rejected explicitly: many-to-many relationships (add an associative
+table), keys on views, `classDef`/`style`, CSS classes other than `view`,
+`direction BT`/`RL`, HTML, directives and frontmatter. Limits: 200 entities,
+400 relationships, 300 columns per entity, 128-character names.
+
+```mermaid
+erDiagram
+    CUS["sales.Customers"] {
+        bigint Id PK
+        nvarchar(20) Customer_Number UK "NOT NULL"
+        nvarchar(250) Name_Ar
+    }
+    ORD["sales.Orders"] {
+        bigint Id PK
+        bigint Customer_Id FK "NOT NULL"
+    }
+    SUM["sales.Customer_Summary_View"]:::view {
+        bigint Customer_Id
+    }
+    CUS ||..o{ ORD : places
+```
+
+Editability: every table is a native Entity (or View) group instance with
+its header and body sub-shapes; text, tab stops, the PK separator and column
+dividers come from the master's own formulas and cached values. Generated
+entities carry no add-on model reference, so the master's own rule
+(`User.ManualEdits = User.RefShapeGuid=-1`) makes them free-form: designers edit
+names, columns and types directly in the shape text, and double-click does not
+call the database add-on. The add-on's model master (which embeds the reference
+schema) and its document-open hooks are not shipped; dropping new shapes from
+the Entity Relationship stencil still starts the add-on as usual. Relationships
+are native Relationship instances glued to the whole parent and child entity
+(walking glue, as in the reference), so they follow moved tables.
+
+Layout: tables are layered by relationship (parents first), ordered to reduce
+crossings and centred over their neighbours; relationships run straight where
+two tables overlap, otherwise orthogonally through free channels and corridors
+between tables. Tables without relationships, typically views, follow in rows
+below. Column widths use Calibri metrics measured against the reference: on
+the reference schema, generated heights and line counts match exactly and
+tab stops are within 0.09 in. The page is sized to the content with 1-inch
+margins. The browser preview uses Mermaid's own ER layout.
+
+Regenerate the template assets from the reference ERD (never commit it):
+
+```powershell
+node scripts/extract-erd-template.mjs 'path/to/reference-erd.vsdx'
+```
+
+**Manual Visio gate (pending; not customer-ready until passed).** Visio was
+not available while building this export; nothing has been opened in Visio
+yet. In Visio desktop, open a TEMP copy of a downloaded ERD and confirm:
+
+1. No repair dialog appears and the Database tab does not report errors.
+2. Tables show the grey header, PK compartment and separator, bold `NOT NULL`
+   rows and both column dividers; views show one divider.
+3. Edit a column name and type in a table's text; the table resizes and the
+   dividers stay aligned.
+4. Move a table: its relationships stay glued and re-route to its edges.
+5. Crow's-foot ends match the Mermaid cardinalities; identifying lines are solid.
+6. Drop a new Entity from the stencil; the database add-on handles it normally.
+7. Save, close, reopen; repeat steps 3 and 4.
+
 ## Privacy And Hosting
 
 Parsing and conversion run in the browser: no AI calls, diagram uploads,
@@ -175,7 +264,8 @@ or an approved internal HTTPS server. The app targets the site root; configure
 Vite `base` and rebuild for subpath hosting. Prefer an identity-protected team
 site; authentication is not implemented in this local release. Do not publish
 the source folder or expose Vite dev/preview servers publicly. Disable diagram
-logging and third-party analytics. Public deployment has not been performed.
+logging and third-party analytics. The `main` branch is deployed to Vercel and
+GitHub Pages (subpath build with `--base`, see `.github/workflows`).
 
 Research extracts of the original drawing have been removed from `samples/`.
 The embedded native assets contain no docProps, thumbnail, customXml, user
@@ -193,15 +283,17 @@ $env:PLAYWRIGHT_START_SERVER = '1'
 npm run test:e2e
 ```
 
-Browser tests use installed Edge and start/reuse a localhost server. They cover
+Browser tests use installed Edge (set `PLAYWRIGHT_CHANNEL=chrome` where Edge is
+not installed) and start/reuse a localhost server. They cover
 native downloads, imports, invalid input, stale-operation races, line styling,
-nonblank images, and desktop/mobile layouts. Mermaid is pinned because its
-sequence DB is version-specific. KaTeX is overridden to patched 0.18.2;
+nonblank images, desktop/mobile layouts and the ER sample download. Mermaid is
+pinned because its sequence and ER DBs are version-specific. KaTeX is overridden to patched 0.18.2;
 rerun tests when updating these dependencies.
 
-Latest results (Node 22.23): 51 converter tests, 9 Edge workflows, lint,
-`tsc -b` and `vite build` all pass. No dependencies have changed since the
-earlier zero-finding audit.
+Latest results (Node 22.23): 75 converter tests (52 sequence, 23 ER), lint,
+`tsc -b` and `vite build` all pass; the 11 browser workflows pass in Chrome
+(Edge was not available for the ER release run). No dependencies have changed
+since the earlier zero-finding audit.
 
 The sample `samples/CreateBillRequest.vsdx` contains:
 
