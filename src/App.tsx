@@ -3,7 +3,7 @@ import {
   ArrowDownToLine, Check, CircleAlert, Code2, Database, FileInput, FilePlus2,
   Focus, LoaderCircle, LockKeyhole, Play, ScanLine, Trash2, ZoomIn, ZoomOut,
 } from 'lucide-react'
-import { detectKind, generateVsdx, prepareDiagram } from './converter'
+import { detectKind, generateErx, generateVsdx, prepareDiagram } from './converter'
 import { ER_SAMPLE_CODE, SAMPLE_CODE } from './sample'
 import './App.css'
 
@@ -122,6 +122,7 @@ function App() {
   const [operation, setOperation] = useState<Operation>(null)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
+  const [notes, setNotes] = useState<string[]>([])
   const [tab, setTab] = useState<'editor' | 'preview'>('editor')
   const [fit, setFit] = useState(true)
   const [zoom, setZoom] = useState(1)
@@ -142,6 +143,7 @@ function App() {
     setOperation('prepare')
     setError('')
     setNotice('')
+    setNotes([])
     const active = () => mountedRef.current && revision === revisionRef.current && request === requestRef.current
     try {
       if (!snapshot.trim()) throw new Error('Enter Mermaid source before preparing.')
@@ -194,6 +196,7 @@ function App() {
     setPreview(null)
     setError('')
     setNotice('')
+    setNotes([])
   }
 
   function changeSource(value: string) {
@@ -236,6 +239,25 @@ function App() {
       if (active()) setError(errorMessage(failure))
     } finally {
       if (active()) setOperation(null)
+    }
+  }
+
+  // ERwin ERX model for Visio's Database > Import: real model tables, columns, keys and relationships.
+  function exportErx() {
+    if (!current || !preview || preview.model.kind !== 'er') return
+    const model = preview.model
+    const capturedTitle = filename
+    setError('')
+    setNotes([])
+    try {
+      const { bytes, notes: exportNotes } = generateErx(model, titleRef.current.trim() || capturedTitle)
+      const copy = new Uint8Array(bytes.byteLength)
+      copy.set(bytes)
+      downloadFile(new Blob([copy.buffer], { type: 'application/octet-stream' }), `${capturedTitle}.erx`)
+      setNotice('Database model downloaded: in Visio, Database > Import > ERwin ERX')
+      setNotes(exportNotes)
+    } catch (failure) {
+      setError(errorMessage(failure))
     }
   }
 
@@ -308,6 +330,8 @@ function App() {
             <button type="button" className="button primary" disabled={!current} onClick={() => void exportVisio()}>
               {operation === 'export' ? <LoaderCircle className="spin" size={16} aria-hidden="true" /> : <ArrowDownToLine size={16} aria-hidden="true" />}Download Visio
             </button>
+            {kind === 'er' && <button type="button" className="button secondary erx" disabled={!current} title="ERwin ERX model for Visio Database > Import"
+              onClick={exportErx}><Database size={16} aria-hidden="true" />Download ERX</button>}
           </div>
         </section>
 
@@ -388,6 +412,7 @@ function App() {
             <span>{status}</span>
           </div>
           {error && <p className="error-message" role="alert">{error}</p>}
+          {notes.length > 0 && <ul className="export-notes" aria-label="Export notes">{notes.map((note) => <li key={note}>{note}</li>)}</ul>}
         </div>
       </main>
     </div>

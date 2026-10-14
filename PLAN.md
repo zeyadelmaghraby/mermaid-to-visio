@@ -189,3 +189,17 @@ Verification:
   widths within 0.1 in, tab stops within 0.09 in.
 - **Pending:** the README's manual Visio gate. Visio was not available, so
   no repair-free open, editing or glue behaviour has been observed in Visio.
+
+### Model-backed tables (ERX)
+
+Opening the `.vsdx` export showed free-form tables: the template's shapes, but no
+Database tab, Database Properties or model. The add-on's model is a proprietary
+InfoModeler/ORM binary (MFC-serialised `ORMInfo`/`MAPInfo` streams plus a
+shape-GUID map), so generating it was rejected as unverifiable. Reverse
+engineering from SQL Server was rejected because it requires a database
+installation. Chosen: an ERwin 3.5 `.erx` export, which Visio Professional
+2016-2024 imports natively (Database > Import), producing real model tables
+that designers edit in Database Properties. The format follows an
+ERwin-written ERX 3.5 file (section order, codes, built-in domains). Pending:
+the first import in the team's Visio, including data type mapping and the
+`CT_EX` (exactly one) cardinality code, which the reference file did not use.
