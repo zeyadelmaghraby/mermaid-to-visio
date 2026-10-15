@@ -42,14 +42,15 @@ except where the table says **plain shape**.
 | `alt`/`else` | Alternative fragment + Interaction operands |
 | `par`/`and` | Alternative fragment with tag text `par` + operands |
 | `loop`, `opt` | Loop fragment, Optional fragment |
+| `break` | Other fragment with operator tab `break` + guard |
 | `Note left/right/over` | **plain shape** rectangle; the reference has no note master |
 
-The Other fragment master is packaged but not used. `<br/>` gives multiline labels.
+`<br/>` gives multiline labels.
 Frames nest up to 8 levels.
 
 The following are explicitly rejected, never approximated: `box`, `create`/`destroy`,
 `autonumber`, `title`/`accTitle`/`accDescr`, links/properties/details, `rect`,
-`critical`, `break`, central-connection and other unknown event types,
+`critical`, central-connection and other unknown event types,
 `%%{}` directives, frontmatter, `@{}` metadata, HTML other than `<br/>`, and
 other diagram families.
 Limits: 100,000 source characters, 100 KB imported files, 1-30 participants,
@@ -91,7 +92,8 @@ The reference drawing is not modified or needed at runtime.
 Shared tokens in `src/converter/theme.ts` define the palette and dimensions.
 Only whole-word success/failure guards are colored green/red.
 
-Page size is fixed at **21.5 x 24.5 inches**, with 0.25-inch margins and a
+Page size is **21.5 x 24.5 inches** (taller diagrams extend the height in
+half-inch steps, see below), with 0.25-inch margins and a
 quarter-inch grid. Other page settings: 1:1 scale, the reference layout/ruler
 settings, and a Connector layer. (The original file is 16.5 inches tall; the
 selected screenshot overrides that.) Text is never scaled down. Labels wrap at
@@ -100,8 +102,15 @@ connection grid in `src/converter/vsdx.ts`. Export fails with a "split the diagr
 message if any of these happens:
 
 - Participants cannot be compressed to fit 21.5 in (about 18+ participants).
-- The lifeline needs more than its 100 native points (99 quarter-inch levels).
+- The diagram would need a page over 150 inches tall (600 quarter-inch levels).
 - A nested activation has no matching parent connection point.
+
+Diagrams longer than the lifeline masters' 100 native points (99 quarter-inch
+levels, the 24.5-inch page) extend the page height and append instance-only
+Connection rows (IX 100+) to each lifeline. Each appended row repeats the
+master's own rule, `IF(Controls.Row_1.Y<-dIN,-dIN,Controls.Row_1.Y+MODULUS(...))`
+with `d` = (row + 1) quarter inches, so messages glue to native points along the
+whole lifeline and the master stays byte-identical.
 
 Activation length is bounded only by the page/lifeline limit above. The
 embedded Activation master stays byte-identical, including its 100 Connection

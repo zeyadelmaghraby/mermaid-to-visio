@@ -13,8 +13,9 @@ Current release: participants and actors, solid/dashed/open/cross messages,
 self-messages, multiline labels, explicit activations, and nested alt/else, opt,
 loop and par/and frames. All use the reference's 12 UML Sequence masters. Notes
 and cross marks are plain shapes, because the reference has no master for them.
-`par` uses the Alternative fragment with a `par` tag. Unsupported constructs
-(box, create/destroy, autonumber, rect, critical, break, metadata, directives)
+`par` uses the Alternative fragment with a `par` tag; `break` uses the Other
+fragment with a `break` tag. Unsupported constructs
+(box, create/destroy, autonumber, rect, critical, metadata, directives)
 fail explicitly instead of being approximated. Other Mermaid diagram families
 remain out of scope apart from ER diagrams (below).
 The preview is Mermaid-rendered; exported layout is independently computed and
@@ -136,8 +137,9 @@ the selected 21.5 x 24.5 inch screenshot page and reference print/layout/layer
 settings. This intentionally overrides the source file's 16.5-inch height and
 8-inch Y origins. Lifetimes require explicit Mermaid activation instructions.
 Content-aware spacing avoids clipped text and intersecting frame dividers.
-Text is never scaled down. Oversized diagrams fail with a split message once
-they exceed the fixed page or the native connection-point range.
+Text is never scaled down. Diagrams longer than the page extend its height and
+append native-rule lifeline points; they fail with a split message only past a
+150-inch page or the participant width limit.
 Palette consistency does not make Mermaid's preview layout pixel-identical to
 the native Visio layout or make new content match hand-positioned reference coordinates.
 

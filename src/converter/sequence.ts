@@ -3,7 +3,7 @@ import { referenceTheme } from './theme'
 
 export interface Participant { id: string; label: string; type?: 'participant' | 'actor' }
 export interface Message { from: string; to: string; text: string; dashed: boolean; arrow: 'filled' | 'open' | 'cross' | 'none'; step: number }
-export interface Frame { kind: 'alt' | 'opt' | 'loop' | 'par'; text: string; start: number; end: number; depth: number; branches: { text: string; step: number }[] }
+export interface Frame { kind: 'alt' | 'opt' | 'loop' | 'par' | 'break'; text: string; start: number; end: number; depth: number; branches: { text: string; step: number }[] }
 export interface Note { participants: string[]; placement: number; text: string; step: number }
 export interface Activation { participant: string; start: number; end: number; depth: number }
 export interface SequenceModel { participants: Participant[]; messages: Message[]; frames: Frame[]; notes: Note[]; activations: Activation[]; steps: number }
@@ -67,8 +67,8 @@ async function parseUnlocked(source: string): Promise<SequenceModel> {
   const active = new Map<string, Activation[]>()
   const events = db.getMessages()
   if (events.length > 1000) throw new Error('Use at most 1,000 sequence events.')
-  const starts: Record<number, Frame['kind']> = { 10: 'loop', 12: 'alt', 15: 'opt', 19: 'par' }
-  const ends: Record<number, Frame['kind']> = { 11: 'loop', 14: 'alt', 16: 'opt', 21: 'par' }
+  const starts: Record<number, Frame['kind']> = { 10: 'loop', 12: 'alt', 15: 'opt', 19: 'par', 30: 'break' }
+  const ends: Record<number, Frame['kind']> = { 11: 'loop', 14: 'alt', 16: 'opt', 21: 'par', 31: 'break' }
   for (const event of events) {
     const step = model.steps++
     if (event.centralConnection) throw new Error('Central connection arrows are unsupported.')

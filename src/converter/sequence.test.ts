@@ -10,6 +10,12 @@ vi.mock('mermaid', async (importOriginal) => {
 })
 
 describe('sequence database snapshot', () => {
+  it('maps break blocks to frames', async () => {
+    const model = await parseSequence('sequenceDiagram\nA->>B: call\nbreak Unauthorized\nB-->>A: rejected\nend\nA->>B: next')
+    expect(model.frames).toEqual([{ kind: 'break', text: 'Unauthorized', start: 1, end: 3, depth: 0, branches: [] }])
+    expect(model.messages.map((message) => message.step)).toEqual([0, 2, 4])
+  })
+
   it('preserves actors and requires explicit balanced activations', async () => {
     const plain = await parseSequence('sequenceDiagram\nactor A\nA->>B: hi')
     expect(plain.participants[0].type).toBe('actor')
@@ -73,7 +79,6 @@ B--xA: dashed cross`)
     'sequenceDiagram\nA->>B: hi\ndestroy B\nA->>B: bye',
     'sequenceDiagram\nrect rgb(0,0,0)\nA->>B: hi\nend',
     'sequenceDiagram\ncritical Critical\nA->>B: hi\nend',
-    'sequenceDiagram\nbreak Stop\nA->>B: hi\nend',
     'sequenceDiagram\npar_over Parallel\nA->>B: hi\nend',
     'sequenceDiagram\nA<<->>B: bidirectional',
     'sequenceDiagram\nA->>B: hi\nactivate B',
