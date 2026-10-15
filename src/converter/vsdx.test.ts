@@ -242,6 +242,38 @@ describe('native Visio package', () => {
     }
   })
 
+  it('extends the page and appends native lifeline points for diagrams longer than the reference page', async () => {
+    const model = await parseSequence('sequenceDiagram\nactivate A\n' + 'A->>B: another request\n'.repeat(150) + 'deactivate A')
+    const bytes = await generateVsdx(model)
+    const { page, value, point, named, zip } = await loadPage(bytes)
+    const pages = new DOMParser().parseFromString(await zip.file('visio/pages/pages.xml')!.async('string'), 'application/xml')
+    const height = Number(pages.querySelector('PageSheet > Cell[N="PageHeight"]')!.getAttribute('V'))
+    expect(height).toBeGreaterThan(pageSettings.PageHeight)
+    expect(height * 2).toBe(Math.round(height * 2))
+    const top = height - 0.975 - referenceTheme.headerHeight
+    // Appended lifeline rows repeat the master's rule: row k sits (k+1) quarter inches below the header, clamped to the end.
+    const rows = Array.from(named('Lifeline.B').querySelectorAll(':scope > Section[N="Connection"] > Row')).filter((row) => Number(row.getAttribute('IX')) >= 100)
+    expect(rows.length).toBeGreaterThan(50)
+    for (const row of rows) {
+      const depth = (Number(row.getAttribute('IX')) + 1) * PITCH
+      expect(row.querySelector('Cell[N="X"]')!.getAttribute('F')).toBe('Controls.Row_1')
+      expect(row.querySelector('Cell[N="Y"]')!.getAttribute('F')).toBe(`IF(Controls.Row_1.Y<-${depth}IN,-${depth}IN,Controls.Row_1.Y+MODULUS(ABS(Controls.Row_1.Y),0.25))`)
+    }
+    const connects = Array.from(page.querySelectorAll('Connect'))
+    expect(connects).toHaveLength(model.messages.length * 2 + 2)
+    expect(connects.some((connect) => Number(connect.getAttribute('ToPart')) >= 200 && connect.getAttribute('ToSheet') === named('Lifeline.B').getAttribute('ID'))).toBe(true)
+    for (const connect of connects) {
+      const from = page.querySelector(`Shape[ID="${connect.getAttribute('FromSheet')}"]`)!
+      const to = page.querySelector(`Shape[ID="${connect.getAttribute('ToSheet')}"]`)!
+      const endpoint = connect.getAttribute('FromCell') === 'BeginX' ? 'Begin' : 'End'
+      const [pointX, pointY] = point(to, Number(connect.getAttribute('ToPart')) - 100)
+      expect(value(from, `${endpoint}X`)).toBeCloseTo(pointX, 10)
+      expect(value(from, `${endpoint}Y`)).toBeCloseTo(pointY, 10)
+      expect(Math.abs((top - pointY) / PITCH - Math.round((top - pointY) / PITCH))).toBeLessThan(1e-9)
+      expect(pointY).toBeGreaterThan(0.25)
+    }
+  })
+
   it('glues every message endpoint to a real native point on the quarter-inch pitch', async () => {
     const model = await parseSequence(SAMPLE_CODE)
     const { page, value, point } = await loadPage(await generateVsdx(model))
@@ -515,7 +547,7 @@ deactivate A`)
     expect(value(frame, 'PinY') + value(frame, 'Height') / 2).toBeLessThan((value(loop, 'BeginY') + value(loop, 'EndY')) / 2 - value(loop, 'TxtHeight') / 2)
   })
 
-  it('maps loop, opt and par to native fragments with guards and operands', async () => {
+  it('maps loop, opt, par and break to native fragments with guards and operands', async () => {
     const model = await parseSequence(`sequenceDiagram
 A->>B: start
 loop every minute
@@ -528,6 +560,9 @@ par first
 A->>B: one
 and second
 A->>C: two
+end
+break Unauthorized sender
+B-->>A: rejected
 end`)
     const { named, value } = await loadPage(await generateVsdx(model))
     expect(named('Fragment.1').getAttribute('Master')).toBe(String(MASTER.Loop))
@@ -538,6 +573,12 @@ end`)
     expect(par.querySelector('Shapes > Shape[MasterShape="6"] Text')!.textContent).toBe('par')
     expect(named('Operand.3.2').querySelector('Text')!.textContent).toBe('[second]')
     expect(value(named('Fragment.1'), 'PinY')).toBeGreaterThan(value(named('Fragment.2'), 'PinY'))
+    // break: the Other fragment master with a "break" operator tab and its guard.
+    const breakFrame = named('Fragment.4')
+    expect(breakFrame.getAttribute('Master')).toBe(String(MASTER.Other))
+    expect(breakFrame.querySelector('Shapes > Shape[MasterShape="6"] Text')!.textContent).toBe('break')
+    expect(breakFrame.querySelector('Shapes > Shape[MasterShape="7"] Text')!.textContent).toBe('[Unauthorized sender]')
+    expect(value(breakFrame, 'PinY')).toBeLessThan(value(named('Fragment.3'), 'PinY'))
   })
 
   it('uses the real Parallel theme and the selected fixed page settings', async () => {
@@ -557,8 +598,7 @@ end`)
   it('does not infer activations and rejects layouts beyond the native page', async () => {
     const { page } = await loadPage(await generateVsdx(await parseSequence('sequenceDiagram\nA->>B: request\nB-->>A: reply')))
     expect(page.querySelector('Shape[Master="16"]')).toBeNull()
-    await expect(generateVsdx(await parseSequence('sequenceDiagram\n' + 'A->>B: another request\n'.repeat(150)))).rejects.toThrow(/too tall.*Split/)
-    await expect(generateVsdx(await parseSequence('sequenceDiagram\nactivate A\n' + 'A->>B: request\n'.repeat(97) + 'deactivate A'))).rejects.toThrow(/too tall.*Split/)
+    await expect(generateVsdx(await parseSequence('sequenceDiagram\n' + 'A->>A: self check\n'.repeat(250)))).rejects.toThrow(/too long.*Split/)
     const many = await parseSequence('sequenceDiagram\n' + Array.from({ length: 20 }, (_, index) => `participant P${index}`).join('\n') + '\nP0->>P19: wide')
     await expect(generateVsdx(many)).rejects.toThrow(/Too many participants/)
   })

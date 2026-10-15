@@ -2,7 +2,7 @@ import JSZip from 'jszip'
 import type { SequenceModel } from './sequence'
 import { connectorLayer, pageSettings, referenceTheme as theme, semanticColor } from './theme'
 import nativeTheme from './reference-theme.xml?raw'
-import { MASTER, escapeXml, masterCell, masterConnectionRows, measureText, nativeTemplate, resolveInstance, type InstanceSpec, type Override, type ResolvedInstance } from './native'
+import { MASTER, escapeXml, masterCell, masterConnectionRows, measureText, nativeTemplate, resolveInstance, type InstanceSpec, type Override, type ResolvedInstance, type SheetSpec } from './native'
 
 export const NS = 'http://schemas.microsoft.com/office/visio/2012/main'
 const REL = 'http://schemas.openxmlformats.org/package/2006/relationships'
@@ -11,6 +11,8 @@ export const VISIO_REL = 'http://schemas.microsoft.com/visio/2010/relationships/
 // Native UML Activation and lifeline masters expose connection points every quarter inch.
 export const PITCH = 0.25
 const MAX_LIFELINE_POINTS = 100
+// Longer diagrams extend the page and append lifeline points; beyond this the page would exceed 150 inches.
+const MAX_LEVELS = 600
 const HEADER_TOP_MARGIN = 0.975
 const PAGE_MARGIN = 0.25
 
@@ -38,7 +40,7 @@ function validateModel(model: SequenceModel) {
     step(message.step); text(message.text)
   })
   model.frames.forEach((frame) => {
-    if (!['alt', 'opt', 'loop', 'par'].includes(frame.kind) || !Number.isInteger(frame.depth) || frame.depth < 0 || frame.depth > 7 || frame.end < frame.start) throw new Error('Invalid frame.')
+    if (!['alt', 'opt', 'loop', 'par', 'break'].includes(frame.kind) || !Number.isInteger(frame.depth) || frame.depth < 0 || frame.depth > 7 || frame.end < frame.start) throw new Error('Invalid frame.')
     step(frame.start); step(frame.end); text(frame.text)
     frame.branches.forEach((branch) => { step(branch.step); text(branch.text); if (branch.step <= frame.start || branch.step >= frame.end) throw new Error('Branch outside frame.') })
   })
@@ -73,7 +75,7 @@ export async function generateVsdx(model: SequenceModel, title = 'Sequence Diagr
     return code < 32 || (code >= 0xd800 && code <= 0xdfff) || code === 0xfffe || code === 0xffff
   })) throw new Error('Use a title of at most 200 plain-text characters.')
 
-  const pageWidth = pageSettings.PageWidth, pageHeight = pageSettings.PageHeight
+  const pageWidth = pageSettings.PageWidth
   const messageSize = theme.messagePoints / 72, branchSize = theme.branchPoints / 72
   const participantCount = model.participants.length
   const naturalSpan = participantCount > 1 ? theme.firstParticipantGap + (participantCount - 2) * theme.participantGap : 0
@@ -91,8 +93,6 @@ export async function generateVsdx(model: SequenceModel, title = 'Sequence Diagr
   }
 
   // Vertical layout in native connection-point levels below the header bottom.
-  const headerBottom = pageHeight - HEADER_TOP_MARGIN - theme.headerHeight
-  const y = (level: number) => headerBottom - level * PITCH
   const messageAt = new Map(model.messages.map((message) => [message.step, message]))
   const beginLevel = new Map<Message, number>(), endLevel = new Map<Message, number>()
   const frameTop = new Map<Frame, number>(), frameBottom = new Map<Frame, number>(), branchLevel = new Map<number, number>()
@@ -140,7 +140,11 @@ export async function generateVsdx(model: SequenceModel, title = 'Sequence Diagr
     }
   }
   const lastLevel = previous + 2
-  if (lastLevel > MAX_LIFELINE_POINTS - 1 || y(lastLevel) < PAGE_MARGIN) throw new Error('Diagram is too tall for the fixed 24.5-inch page at the native 0.25-inch connection pitch. Split the diagram.')
+  if (lastLevel > MAX_LEVELS) throw new Error('Diagram is too long for one Visio page (over 150 inches). Split the diagram.')
+  // The reference 24.5-inch page, extended in half-inch steps when the lifelines need more room.
+  const pageHeight = Math.max(pageSettings.PageHeight, Math.ceil((HEADER_TOP_MARGIN + theme.headerHeight + lastLevel * PITCH + PAGE_MARGIN) / 0.5) * 0.5)
+  const headerBottom = pageHeight - HEADER_TOP_MARGIN - theme.headerHeight
+  const y = (level: number) => headerBottom - level * PITCH
 
   // Explicit lifetimes: a bar runs to its deactivation marker, including idle stretches while others work.
   const levelAt = (message: Message, participant: string) => (message.to === participant ? endLevel.get(message)! : beginLevel.get(message)!)
@@ -222,9 +226,12 @@ export async function generateVsdx(model: SequenceModel, title = 'Sequence Diagr
     const width = right - left
     const top = y(frameTop.get(frame)!), bottom = y(frameBottom.get(frame)!)
     const base = { PinX: v(left + width / 2), PinY: v((top + bottom) / 2), Width: v(width), Height: v(top - bottom) }
-    if (frame.kind === 'loop' || frame.kind === 'opt') {
-      const spec: InstanceSpec = { id: allocate(), master: frame.kind === 'loop' ? MASTER.Loop : MASTER.Optional, nameU: `Fragment.${index + 1}`, cells: base,
-        sub: { 7: { text: `[${frame.text}]`, cells: { 'Char.Color': characterColor(semanticColor(frame.text)) } } } }
+    if (frame.kind === 'loop' || frame.kind === 'opt' || frame.kind === 'break') {
+      // break has no dedicated master: the Other fragment carries it with a "break" operator tab.
+      const master = frame.kind === 'loop' ? MASTER.Loop : frame.kind === 'opt' ? MASTER.Optional : MASTER.Other
+      const sub: Record<number, SheetSpec> = { 7: { text: `[${frame.text}]`, cells: { 'Char.Color': characterColor(semanticColor(frame.text)) } } }
+      if (frame.kind === 'break') sub[6] = { text: 'break' }
+      const spec: InstanceSpec = { id: allocate(), master, nameU: `Fragment.${index + 1}`, cells: base, sub }
       frameXml.push(resolve(spec).xml())
       continue
     }
@@ -249,7 +256,12 @@ export async function generateVsdx(model: SequenceModel, title = 'Sequence Diagr
     })
   }
 
-  // Lifelines (authentic Object/Actor lifeline groups with 100 native connection points).
+  // Lifelines (authentic Object/Actor lifeline groups with 100 native connection points). Longer lifelines get
+  // instance-only rows after them with the master's own rule: row k sits (k+1) quarter inches down, clamped to the end.
+  const lifelineRows = Array.from({ length: Math.max(0, lastLevel - MAX_LIFELINE_POINTS) }, (_, index) => {
+    const depth = `${number((MAX_LIFELINE_POINTS + index + 1) * PITCH)}IN`
+    return { X: 'Controls.Row_1', Y: `IF(Controls.Row_1.Y<-${depth},-${depth},Controls.Row_1.Y+MODULUS(ABS(Controls.Row_1.Y),0.25))` }
+  })
   const lifelines = new Map<string, ResolvedInstance>()
   const lineColor = v('#5b9bd5', 'THEMEGUARD(RGB(91,155,213))')
   for (const participant of model.participants) {
@@ -257,7 +269,8 @@ export async function generateVsdx(model: SequenceModel, title = 'Sequence Diagr
       text: participant.label,
       cells: { PinX: v(x.get(participant.id)!), PinY: v(headerBottom + theme.headerHeight / 2), Width: v(theme.headerWidth), Height: v(theme.headerHeight),
         LineColor: lineColor, 'Controls.Row_1.Y': v(-lastLevel * PITCH), 'Char.Size': v(theme.headerPoints / 72) },
-      sub: Object.fromEntries([6, 7, 8, 9].map((id) => [id, { cells: { LineColor: lineColor } }])) }
+      sub: Object.fromEntries([6, 7, 8, 9].map((id) => [id, { cells: { LineColor: lineColor } }])),
+      ...(lifelineRows.length ? { connectionRows: lifelineRows } : {}) }
     lifelines.set(participant.id, resolve(spec))
   }
 
@@ -296,7 +309,7 @@ export async function generateVsdx(model: SequenceModel, title = 'Sequence Diagr
       if (matches(row)) return row
       if (sideTemplate === undefined && row < activationRows && (bar.instance!.point(row)[0] > centre) === right) sideTemplate = row
     }
-    if (level < bar.top || level > bar.bottom || sideTemplate === undefined || rows - activationRows >= 2 * MAX_LIFELINE_POINTS) {
+    if (level < bar.top || level > bar.bottom || sideTemplate === undefined || rows - activationRows >= 2 * MAX_LEVELS) {
       throw new Error(`The native Activation of ${bar.activation.participant} has no ${right ? 'right' : 'left'} connection point ${number((level - bar.top) * PITCH)} in from its top.`)
     }
     // Same X rule as the master's even rows, side (local Y) formula copied from a master row on that edge.
@@ -404,7 +417,7 @@ export async function generateVsdx(model: SequenceModel, title = 'Sequence Diagr
     + `<ShowRulers>1</ShowRulers><ShowGrid>0</ShowGrid><ShowPageBreaks>0</ShowPageBreaks><ShowGuides>1</ShowGuides><ShowConnectionPoints>0</ShowConnectionPoints><GlueSettings>9</GlueSettings><SnapSettings>65847</SnapSettings></Window></Windows>`))
   const pageName = escapeXml(title || 'Sequence Diagram')
   zip.file('visio/pages/pages.xml', xmlDeclaration(`<Pages xmlns='${NS}' xmlns:r='${OFFICE_REL}'><Page ID='0' NameU='${pageName}' Name='${pageName}'><PageSheet LineStyle='0' FillStyle='0' TextStyle='0'>`
-    + Object.entries(pageSettings).map(([name, value]) => `<Cell N='${name}' V='${number(value)}'/>`).join('')
+    + Object.entries({ ...pageSettings, PageHeight: pageHeight }).map(([name, value]) => `<Cell N='${name}' V='${number(value)}'/>`).join('')
     + `<Section N='User'><Row N='msvThemeOrder'><Cell N='Value' V='0'/></Row></Section>`
     + `<Section N='Layer'><Row IX='0'>${Object.entries(connectorLayer).map(([name, value]) => `<Cell N='${name}' V='${value}'/>`).join('')}</Row></Section>`
     + `</PageSheet><Rel r:id='rId1'/></Page></Pages>`))
