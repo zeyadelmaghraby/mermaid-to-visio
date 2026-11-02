@@ -1,0 +1,51 @@
+.lld-toolbar { margin-bottom: 14px; }
+.lld-options { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 22px; padding: 10px 14px; border: 1px solid var(--line); background: #fff; font-size: 13px; }
+.lld-options label { display: inline-flex; align-items: center; gap: 7px; cursor: pointer; }
+.lld-options input { width: 15px; height: 15px; accent-color: var(--green); }
+.lld-option-actions { margin-left: auto; display: inline-flex; gap: 2px; }
+.lld-body { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 18px; align-items: start; margin-top: 10px; }
+.lld-review { min-width: 0; display: grid; gap: 18px; }
+.lld-section { display: grid; gap: 12px; }
+.lld-section-head { display: flex; align-items: center; gap: 6px; }
+.lld-section-head h2, .lld-group-title { margin: 0; font-size: 15px; font-weight: 650; color: #002060; }
+.lld-group-title { flex: 1; min-width: 0; padding: 4px 8px; border: 1px solid transparent; border-radius: 4px; background: transparent; }
+.lld-group-title:hover, .lld-group-title:focus { border-color: #cbd5cf; background: #fff; }
+.lld-table { min-width: 0; border: 1px solid var(--line); background: #fff; }
+.lld-table-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+.lld-display { min-width: 0; flex: 0 1 280px; padding: 5px 8px; border: 1px solid #cbd5cf; border-radius: 4px; font-weight: 650; font-size: 13px; }
+.lld-full-name { color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
+.lld-table-actions { margin-left: auto; display: inline-flex; align-items: center; gap: 2px; }
+.lld-table-actions select, .lld-ro select { height: 30px; border: 1px solid #cbd5cf; border-radius: 4px; background: #fff; font-size: 12px; }
+.lld-table-actions select { max-width: 180px; margin-right: 4px; }
+.lld-grid-scroll { overflow-x: auto; }
+.lld-grid { width: 100%; min-width: 620px; border-collapse: collapse; table-layout: fixed; font-size: 12px; }
+.lld-grid th { padding: 6px 8px; background: #002060; color: #fff; font-weight: 600; text-align: center; }
+.lld-grid th:nth-child(1) { width: 30%; } .lld-grid th:nth-child(2) { width: 20%; } .lld-grid th:nth-child(3) { width: 64px; }
+.lld-grid td { padding: 3px 8px; border-top: 1px solid #e3eaf6; vertical-align: middle; overflow-wrap: anywhere; }
+.lld-field { font-weight: 600; }
+.lld-type { color: #3f4b46; }
+.lld-ro { text-align: center; }
+.lld-grid textarea { display: block; width: 100%; min-height: 30px; field-sizing: content; padding: 5px 7px; border: 1px solid transparent; border-radius: 4px; background: transparent; resize: vertical; font-size: 12px; line-height: 1.4; }
+.lld-grid textarea:hover, .lld-grid textarea:focus { border-color: #cbd5cf; background: #fff; }
+.lld-grid tr.is-missing td { background: #fff0ec; }
+.lld-grid tr.is-missing textarea { border-color: var(--coral); }
+.lld-grid tr.is-uncertain td { background: #fff8e6; }
+.lld-add-group { justify-self: start; }
+.lld-report { position: sticky; top: 12px; max-height: calc(100dvh - 24px); overflow: auto; padding: 12px 14px; border: 1px solid var(--line); background: #fff; font-size: 12px; }
+.lld-report h2 { display: flex; align-items: center; gap: 7px; margin: 0 0 8px; font-size: 13px; font-weight: 650; }
+.lld-report h2 svg { color: #b77a5d; }
+.lld-report details { border-top: 1px solid var(--line); padding: 6px 0; }
+.lld-report summary { cursor: pointer; font-weight: 600; }
+.lld-report summary span { display: inline-block; min-width: 20px; margin-left: 4px; padding: 0 6px; border-radius: 9px; background: #eef3f0; color: var(--muted); text-align: center; font-weight: 600; }
+.lld-report ul { margin: 6px 0 0; padding-left: 16px; color: #3f4b46; }
+.lld-report li { margin-bottom: 4px; overflow-wrap: anywhere; }
+.lld-report-empty { margin: 0; color: var(--muted); }
+
+@media (max-width: 1000px) {
+  .lld-body { grid-template-columns: minmax(0, 1fr); }
+  .lld-report { position: static; max-height: none; order: -1; }
+}
+@media (max-width: 760px) {
+  .lld-option-actions { margin-left: 0; }
+  .lld-table-actions { margin-left: 0; }
+}

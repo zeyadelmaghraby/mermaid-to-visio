@@ -4,6 +4,8 @@ import { resolve } from 'node:path'
 import JSZip from 'jszip'
 import { XMLParser, XMLValidator } from 'fast-xml-parser'
 import { ER_SAMPLE_CODE, SAMPLE_CODE } from '../src/sample'
+import { sampleErd } from '../src/lld/fixture'
+import { existsSync } from 'node:fs'
 import { referenceTheme } from '../src/converter/theme'
 
 const sourceName = 'Mermaid diagram source'
@@ -156,6 +158,87 @@ async function releaseGate(page: Page) {
   await page.waitForFunction(() => (window as GateWindow).e2eGate?.released === true)
   await page.evaluate(() => new Promise<void>((done) => requestAnimationFrame(() => requestAnimationFrame(() => done()))))
 }
+
+async function exportLld(page: Page, testInfo: TestInfo, erd: { name: string; buffer: Buffer }, shot: string) {
+  await ready(page)
+  await page.getByRole('button', { name: 'ERD → Word', exact: true }).click()
+  await expect(page.getByRole('main', { name: 'Diagram workspace' })).toBeHidden()
+  await page.getByLabel('Visio ERD file').setInputFiles({ name: erd.name, mimeType: 'application/vnd.ms-visio.drawing', buffer: erd.buffer })
+  await expect(page.getByRole('status')).toContainText('Read ')
+  const path = testInfo.outputPath(shot)
+  await page.screenshot({ path, fullPage: true, animations: 'disabled' })
+  await testInfo.attach(shot, { path, contentType: 'image/png' })
+  const top = testInfo.outputPath(shot.replace('.png', '-top.png'))
+  await page.screenshot({ path: top, animations: 'disabled' })
+  await testInfo.attach(shot.replace('.png', '-top.png'), { path: top, contentType: 'image/png' })
+  const wordEvent = page.waitForEvent('download')
+  await page.getByRole('button', { name: 'Export Word', exact: true }).click()
+  const word = await wordEvent
+  const saved = testInfo.outputPath(word.suggestedFilename())
+  await word.saveAs(saved)
+  return { name: word.suggestedFilename(), zip: await JSZip.loadAsync(await readFile(saved)) }
+}
+
+test('ERD to Word: opens a Visio ERD, reviews descriptions and exports the LLD section', async ({ page }, testInfo) => {
+  const { name, zip } = await exportLld(page, testInfo, { name: 'Billing_ERD.vsdx', buffer: Buffer.from(await sampleErd()) }, 'lld-desktop-1440.png')
+  expect(name).toBe('Billing_LLD_Detailed_Field_Description.docx')
+  const documentXml = await zip.file('word/document.xml')!.async('string')
+  expect(XMLValidator.validate(documentXml)).toBe(true)
+  for (const field of ['Bill_Number', 'Payment_Notifcation_Id', 'Provider_Status_Code']) expect(documentXml).toContain(`>${field}<`)
+  await expect(page.getByRole('heading', { name: 'Validation report' })).toBeVisible()
+  await expect(page.getByText('Possible typos')).toHaveCount(0)
+  await expect(page.getByText('Inconsistent schema prefixes: bil. (2 tables) and bill. (2 tables) look like the same schema.')).toBeVisible()
+  // Edits flow into the export: a description, an R/O override and the module name.
+  await page.getByLabel('Description of Notes').fill('Free-text remarks on the bill')
+  await page.getByLabel('Required or optional: Notes').selectOption('R')
+  await page.getByLabel('Module name').fill('Billing Core')
+  const again = page.waitForEvent('download')
+  await page.getByRole('button', { name: 'Export Word', exact: true }).click()
+  const edited = await again
+  expect(edited.suggestedFilename()).toBe('Billing_Core_LLD_Detailed_Field_Description.docx')
+  const editedXml = await (await JSZip.loadAsync(await readFile(await edited.path()))).file('word/document.xml')!.async('string')
+  expect(editedXml).toContain('Free-text remarks on the bill')
+  expect(editedXml).toContain('Detailed Field Description – Billing Core Module')
+  await page.setViewportSize({ width: 390, height: 844 })
+  await assertLayout(page)
+  await page.setViewportSize({ width: 1440, height: 1000 })
+  // The Mermaid converter is untouched when switching back.
+  await page.getByRole('button', { name: 'Mermaid → Visio', exact: true }).click()
+  await expect(page.getByRole('textbox', { name: sourceName })).toHaveValue(SAMPLE_CODE)
+  await assertLayout(page)
+})
+
+test('runs entirely in the browser: no request leaves the app origin in any converter', async ({ page }, testInfo) => {
+  const appOrigin = new URL(testInfo.project.use.baseURL!).origin
+  const external: string[] = []
+  page.on('request', (request) => {
+    const url = new URL(request.url())
+    if (!['data:', 'blob:'].includes(url.protocol) && url.origin !== appOrigin) external.push(request.url())
+  })
+  // Sequence and ER: preview and native Visio download.
+  await ready(page)
+  for (const sample of ['Load billing sample', 'Load ER sample']) {
+    await page.getByRole('button', { name: sample, exact: true }).click()
+    await page.getByRole('button', { name: 'Prepare preview', exact: true }).click()
+    await expect(page.getByRole('status')).toHaveText('Preview ready')
+    const download = page.waitForEvent('download')
+    await page.getByRole('button', { name: 'Download Visio', exact: true }).click()
+    await download
+  }
+  // ERD to Word: parse, generate descriptions, validate and export.
+  await exportLld(page, testInfo, { name: 'Billing_ERD.vsdx', buffer: Buffer.from(await sampleErd()) }, 'lld-privacy.png')
+  await page.waitForLoadState('networkidle')
+  expect(external, 'Requests to other origins').toEqual([])
+})
+
+test('ERD to Word with the real Billing ERD (local fixture)', async ({ page }, testInfo) => {
+  test.skip(!existsSync('samples/lld-export/Billing_ERD.vsdx'), 'Client fixture is local only')
+  const { zip } = await exportLld(page, testInfo, { name: 'Billing_ERD.vsdx', buffer: await readFile('samples/lld-export/Billing_ERD.vsdx') }, 'lld-billing-1440.png')
+  const documentXml = await zip.file('word/document.xml')!.async('string')
+  expect((documentXml.match(/<w:tbl>/g) ?? []).length).toBe(26)
+  await expect(page.getByText('Missing descriptions')).toHaveCount(0)
+  await expect(page.getByText('Possible typos')).toBeVisible()
+})
 
 test('ER sample renders and downloads native Database Model Diagram entities glued by relationships', async ({ page }, testInfo) => {
   await ready(page)

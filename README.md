@@ -262,7 +262,53 @@ yet. In Visio desktop, open a TEMP copy of a downloaded ERD and confirm:
 6. Drop a new Entity from the stencil; the database add-on handles it normally.
 7. Save, close, reopen; repeat steps 3 and 4.
 
-## Privacy And Hosting
+## ERD → Word (LLD Detailed Field Description)
+
+The **ERD → Word** switch in the header opens a separate converter in the other
+direction: a Visio ERD (`.vsdx`, the source of truth) becomes the LLD's
+"Detailed Field Description" section as a Word `.docx`, with one bulleted
+heading and one 4-column table per database table. It does not use Mermaid,
+AI services or licences; everything runs in the browser (`src/lld/`).
+
+1. **Open Visio ERD**: every page's Entity/View groups are read. Column text is
+   read with its character runs, so NOT NULL comes from the bold style of each
+   column name (PK columns are always Required), even when Visio splits `PK`,
+   the name and the type into separate runs. Lines without a key column
+   (`name<TAB>type`) are kept. Relationships come from the glued connectors
+   (parent at Begin, child at End), and each FK column is matched to its parent
+   by a typo-tolerant name similarity (difflib ratio ≥ 0.75).
+2. **Review**: descriptions are filled automatically from the ERD alone, as
+   short possessive phrases ("Bill's due date", "Bill that the bill timeline
+   belongs to (ref. Bills)", "Bill's status (lookup value)"); Id and audit
+   columns use a built-in dictionary. Columns whose purpose the name does not
+   make clear are highlighted for checking. Edit group titles, table group and
+   order, headings, descriptions and Required/Optional overrides. Untick
+   **Fill descriptions automatically** to keep only the dictionary and the FK
+   and lookup fallbacks.
+3. **Reuse**: download `descriptions.json` and upload it again when the ERD
+   changes; it uses the reference format (`module`, `groups`, `common`,
+   `tables` with `_entity` and `_uncertain`), plus `_display` (heading) and
+   `_required` (R/O overrides).
+4. **Export Word** saves `<Module>_LLD_Detailed_Field_Description.docx`: A4,
+   1-inch margins, Calibri 11; navy headings; a real `▪` bullet per table;
+   fixed 2900 | 1800 | 1250 | 3076 DXA columns with a repeated navy header row,
+   `#8EAADB` borders and rows that do not split; Data Type with `(PK, FK, UK)`
+   tags; R/O, or `-` for views under "Referenced Views". Options: include
+   views (on), friendly data types (off).
+
+The **validation report** lists missing and uncertain descriptions, FKs without
+a resolvable parent, connectors not glued to two tables, schema prefixes that
+look alike (`bil.` / `bill.`), likely typos (a column word or name one edit away
+from a more common one, such as a misspelled `Notification` or
+`Concurrency_Stamp`) and columns that are Required in some sibling tables but
+Optional in others. It can be downloaded as text.
+
+Acceptance tests against the client's Billing ERD live with its fixture in the
+git-ignored `samples/lld-export/` folder (`billing-acceptance.test.ts` next to
+`Billing_ERD.vsdx`, optionally `schema.expected.json`), so the client's schema
+is never committed; `npm test` runs them where they exist. Committed tests use
+a synthetic ERD with the same edge cases.
+
 
 Parsing and conversion run in the browser: no AI calls, diagram uploads,
 analytics, automatic source persistence or external fonts. Reloading discards
@@ -303,9 +349,12 @@ nonblank images, desktop/mobile layouts and the ER sample download. Mermaid is
 pinned because its sequence and ER DBs are version-specific. KaTeX is overridden to patched 0.18.2;
 rerun tests when updating these dependencies.
 
-Latest results (Node 22.23): 75 converter tests (52 sequence, 23 ER), lint,
-`tsc -b` and `vite build` all pass; the 11 browser workflows pass in Chrome
-(Edge was not available for the ER release run). No dependencies have changed
+Latest results (Node 22.23): 89 committed unit tests (sequence, ER and
+ERD → Word) plus 3 local Billing ERD acceptance tests (the
+`schema.expected.json` comparison is skipped until that golden file is added),
+lint, `tsc -b` and `vite build` all pass; the 14 browser workflows, including
+a check that no request leaves the app, pass in Chrome (Edge was not available
+for these runs). No dependencies have changed
 since the earlier zero-finding audit.
 
 The sample `samples/CreateBillRequest.vsdx` contains:
