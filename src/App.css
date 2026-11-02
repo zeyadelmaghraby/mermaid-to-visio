@@ -36,6 +36,10 @@
   color: var(--green);
 }
 .brand-mark svg { width: 23px; height: 23px; }
+.mode-switch { display: inline-flex; padding: 3px; border: 1px solid var(--line); border-radius: 6px; background: #f2f5f3; }
+.mode-switch button { height: 32px; padding: 0 14px; border: 0; border-radius: 4px; background: transparent; color: var(--muted); font-size: 13px; font-weight: 600; white-space: nowrap; }
+.mode-switch button[aria-pressed='true'] { background: #fff; color: var(--green); box-shadow: 0 1px 2px #243b2f1f; }
+[hidden] { display: none !important; }
 .privacy-status { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 12px; white-space: nowrap; }
 .workspace { margin: 0 auto; max-width: 1920px; padding: 24px 32px 12px; }
 .document-toolbar { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 24px; }
@@ -112,6 +116,9 @@
 
 @media (max-width: 760px) {
   .app-header { min-height: 68px; padding: 14px 16px; gap: 8px; }
+  .app-header { flex-wrap: wrap; }
+  .mode-switch { order: 3; width: 100%; }
+  .mode-switch button { flex: 1; padding: 0 8px; }
   .brand { gap: 9px; }
   .brand h1 { font-size: 20px; }
   .brand-mark { width: 32px; height: 32px; flex-basis: 32px; }

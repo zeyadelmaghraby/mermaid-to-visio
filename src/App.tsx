@@ -5,6 +5,7 @@ import {
 } from 'lucide-react'
 import { detectKind, generateVsdx, prepareDiagram } from './converter'
 import { ER_SAMPLE_CODE, SAMPLE_CODE } from './sample'
+import LldWorkspace from './lld/LldWorkspace'
 import './App.css'
 
 const SOURCE_LIMIT = 100_000
@@ -123,6 +124,8 @@ function App() {
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
   const [tab, setTab] = useState<'editor' | 'preview'>('editor')
+  const [mode, setMode] = useState<'mermaid' | 'lld'>('mermaid')
+  const [lldOpened, setLldOpened] = useState(false)
   const [fit, setFit] = useState(true)
   const [zoom, setZoom] = useState(1)
   const [viewport, setViewport] = useState({ width: 0, height: 0 })
@@ -290,10 +293,14 @@ function App() {
     <div className="app-shell">
       <header className="app-header">
         <div className="brand"><span className="brand-mark"><ScanLine aria-hidden="true" /></span><h1>Mermaid to Visio</h1></div>
+        <div className="mode-switch" role="group" aria-label="Converter">
+          <button type="button" aria-pressed={mode === 'mermaid'} onClick={() => setMode('mermaid')}>Mermaid → Visio</button>
+          <button type="button" aria-pressed={mode === 'lld'} onClick={() => { setMode('lld'); setLldOpened(true) }}>ERD → Word</button>
+        </div>
         <span className="privacy-status"><LockKeyhole size={14} aria-hidden="true" />Local only</span>
       </header>
 
-      <main className="workspace" aria-label="Diagram workspace">
+      <main className="workspace" aria-label="Diagram workspace" hidden={mode !== 'mermaid'}>
         <section className="document-toolbar" aria-label="Document actions">
           <div className="document-name">
             <label htmlFor="diagram-title">Diagram name</label>
@@ -390,6 +397,7 @@ function App() {
           {error && <p className="error-message" role="alert">{error}</p>}
         </div>
       </main>
+      {lldOpened && <div hidden={mode !== 'lld'}><LldWorkspace /></div>}
     </div>
   )
 }
