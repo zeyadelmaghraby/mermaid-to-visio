@@ -1,0 +1,64 @@
+{
+  "reference": "DFED5D95041F71B5D93050E437E22EF085A17166F9D431214EE7736CEE11E869",
+  "masters": [
+    {
+      "id": 5,
+      "nameU": "Composite",
+      "rel": "rId2",
+      "file": "master2.xml"
+    },
+    {
+      "id": 14,
+      "nameU": "Association",
+      "rel": "rId6",
+      "file": "master6.xml"
+    },
+    {
+      "id": 21,
+      "nameU": "Rectangle",
+      "rel": "rId11",
+      "file": "master11.xml"
+    },
+    {
+      "id": 22,
+      "nameU": "Composition.34",
+      "rel": "rId12",
+      "file": "master12.xml"
+    },
+    {
+      "id": 23,
+      "nameU": "Rectangle.41",
+      "rel": "rId13",
+      "file": "master13.xml"
+    },
+    {
+      "id": 3004,
+      "nameU": "Directed Association",
+      "rel": "rId16",
+      "file": "master16.xml"
+    }
+  ],
+  "themes": [
+    {
+      "rel": "rId5",
+      "file": "theme2.xml"
+    },
+    {
+      "rel": "rId4",
+      "file": "theme1.xml"
+    }
+  ],
+  "files": {
+    "masters.xml": "EA40BC6DF539F84D4FD7306994A2E6C46D801D2DD40853ADEF13919E2A79C945",
+    "master2.xml": "84FB8E2C9A841CACD4C0C25F4AD3D3EB86E2BDDBCD4917E74BC7075142424694",
+    "master6.xml": "4C80A17939DD76E5E28D9FF306B6E0701B317F58B02405B76848AF5B2A9CC99C",
+    "master11.xml": "2990AB67AEC09CB48D610548CC6AAF0280D2BA25212248C9F7BBE67BE9D42628",
+    "master12.xml": "95707B69EDFD1962CB9CD4A0C918C97DFA0B87FE0434242F34C71673EC213B90",
+    "master13.xml": "1C096A1335DE89290A4CEBF0BCE29748D3992B236F5FC1214619989654650B9B",
+    "master16.xml": "A4B4AC62F1D02BC72DBD8510B952E75F55474EA1D5AF828E5DF14B63109BE8B6",
+    "theme2.xml": "3F4E00074572E7FD4C6A9ED62CBF08A219DB34C55F7D98E4955566321B767319",
+    "theme1.xml": "366C99134D82E6CBC6051798ACA75DE050C92190A7F0967ECFA0A1A9F79AE71A",
+    "document.xml": "D262E80FB27AD7CCF4DB37C18FC88C42D12426A74449146312EF6AF14060683B",
+    "page.json": "EFEABBDC2CBD6973C6061B8219EAB9D5949735DABA7606E86BB9442D24188D33"
+  }
+}

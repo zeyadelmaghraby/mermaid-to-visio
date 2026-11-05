@@ -2,7 +2,8 @@ import JSZip from 'jszip'
 
 // Builds small Visio ERD drawings for tests: Entity/View groups with styled column text and glued connectors.
 export interface FixtureEntity { id: number; name: string; nameU?: string; body: string; styles: Record<number, number>; master?: string }
-export interface FixtureConnector { id: number; begin?: number; end?: number }
+// ends: the Relationship's cached BeginArrow/EndArrow (crow's-foot line ends), when the test needs them.
+export interface FixtureConnector { id: number; begin?: number; end?: number; ends?: [number, number] }
 
 const escape = (value: string) => value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 
@@ -11,7 +12,8 @@ function pageXml(entities: FixtureEntity[], connectors: FixtureConnector[]) {
     + `<Shape ID='${entity.id + 1}' Type='Shape' MasterShape='6'><Text><cp IX='0'/>${escape(entity.name)}\n</Text></Shape>`
     + `<Shape ID='${entity.id + 2}' Type='Shape' MasterShape='7'><Section N='Character'>${Object.entries(entity.styles).map(([ix, style]) => `<Row IX='${ix}'><Cell N='Style' V='${style}'/></Row>`).join('')}</Section>`
     + `<Text>${entity.body}</Text></Shape></Shapes></Shape>`).join('')
-    + connectors.map((connector) => `<Shape ID='${connector.id}' NameU='Relationship.${connector.id}' Type='Shape' Master='13'/>`).join('')
+    + connectors.map((connector) => `<Shape ID='${connector.id}' NameU='Relationship.${connector.id}' Type='Shape' Master='13'>`
+      + (connector.ends ? `<Cell N='BeginArrow' V='${connector.ends[0]}' F='Inh'/><Cell N='EndArrow' V='${connector.ends[1]}' F='Inh'/>` : '') + '</Shape>').join('')
   const connects = connectors.flatMap((connector) => [
     ...(connector.begin ? [`<Connect FromSheet='${connector.id}' FromCell='BeginX' FromPart='9' ToSheet='${connector.begin}' ToCell='PinX' ToPart='3'/>`] : []),
     ...(connector.end ? [`<Connect FromSheet='${connector.id}' FromCell='EndX' FromPart='12' ToSheet='${connector.end}' ToCell='PinX' ToPart='3'/>`] : [])]).join('')

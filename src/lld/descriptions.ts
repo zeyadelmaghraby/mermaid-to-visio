@@ -31,8 +31,10 @@ export const OTHER_TITLE = 'Other Tables'
 
 export const words = (value: string) => value.split('_').filter(Boolean)
 export const prettify = (value: string) => words(value).join(' ')
+// Words that read the same in the singular ("Sales_Reports" -> "Sales report", "Analysis" stays).
+const INVARIANT = /^(sales|news|series|species|.*(ss|us|is))$/i
 function singular(word: string) {
-  return /ies$/i.test(word) ? word.slice(0, -3) + 'y' : /(ss|us)$/i.test(word) ? word : /(xes|ches|shes|sses)$/i.test(word) ? word.slice(0, -2) : /s$/i.test(word) ? word.slice(0, -1) : word
+  return INVARIANT.test(word) ? word : /ies$/i.test(word) ? word.slice(0, -3) + 'y' : /(xes|ches|shes|sses)$/i.test(word) ? word.slice(0, -2) : /s$/i.test(word) ? word.slice(0, -1) : word
 }
 // "Bills_Timeline" -> "Bill timeline", "Bill_Requests_Revenue_Entries" -> "Bill request revenue entry"; views drop "_View".
 export function entityName(table: LldTable) {

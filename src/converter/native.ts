@@ -25,6 +25,15 @@ import erdMaster7 from './native-erd/master7.xml?raw'
 import erdMaster8 from './native-erd/master8.xml?raw'
 import erdMaster9 from './native-erd/master9.xml?raw'
 import erdManifest from './native-erd/manifest.json'
+import conceptualMastersXml from './native-conceptual/masters.xml?raw'
+import conceptualDocumentXml from './native-conceptual/document.xml?raw'
+import conceptualMaster2 from './native-conceptual/master2.xml?raw'
+import conceptualMaster6 from './native-conceptual/master6.xml?raw'
+import conceptualMaster11 from './native-conceptual/master11.xml?raw'
+import conceptualMaster12 from './native-conceptual/master12.xml?raw'
+import conceptualMaster13 from './native-conceptual/master13.xml?raw'
+import conceptualMaster16 from './native-conceptual/master16.xml?raw'
+import conceptualManifest from './native-conceptual/manifest.json'
 
 export const MASTER = { ActorLifeline: 2, ObjectLifeline: 4, Message: 5, SelfMessage: 6, Loop: 7, Alternative: 8, Operand: 9,
   Async: 10, Return: 11, Other: 14, Optional: 15, Activation: 16 } as const
@@ -40,6 +49,13 @@ const erdContents: Record<string, string> = { 'master1.xml': erdMaster1, 'master
   'master6.xml': erdMaster6, 'master7.xml': erdMaster7, 'master8.xml': erdMaster8, 'master9.xml': erdMaster9 }
 export const erdTemplate: NativeTemplate = { key: 'erd', mastersXml: erdMastersXml, documentXml: erdDocumentXml,
   masters: erdManifest.masters.map((master) => ({ ...master, xml: erdContents[master.file] })) }
+
+// Conceptual diagram (UML Class connectors, Rectangle entities) masters derived from the reference conceptual diagram.
+export const CONCEPT_MASTER = { Entity: 21, Boundary: 23, Composition: 22, Association: 14, DirectedAssociation: 3004 } as const
+const conceptualContents: Record<string, string> = { 'master2.xml': conceptualMaster2, 'master6.xml': conceptualMaster6, 'master11.xml': conceptualMaster11,
+  'master12.xml': conceptualMaster12, 'master13.xml': conceptualMaster13, 'master16.xml': conceptualMaster16 }
+export const conceptualTemplate: NativeTemplate = { key: 'conceptual', mastersXml: conceptualMastersXml, documentXml: conceptualDocumentXml,
+  masters: conceptualManifest.masters.map((master) => ({ ...master, xml: conceptualContents[master.file] })) }
 
 type Location = { section?: string; sectionIX?: number; row?: string; rowIsIX?: boolean; rowT?: string; cell: string }
 interface CellRecord { key: string; location: Location; V: string; F?: string }
@@ -172,7 +188,8 @@ function normalizeReference(name: string): string {
 export interface SheetSpec { cells?: Record<string, Override>; text?: string; textXml?: string; rows?: Record<string, string> }
 // Instance-only Connection rows appended after the master's rows (no master row to inherit from): explicit X/Y formulas.
 export interface ConnectionRow { X: string; Y: string }
-export interface InstanceSpec extends SheetSpec { id: number; master: number; template?: NativeTemplate; nameU?: string; sub?: Record<number, SheetSpec>; listOrder?: number; connectionRows?: ConnectionRow[] }
+// deleted lists master sub-shapes the instance removes (written as Del='1' placeholders, as Visio does).
+export interface InstanceSpec extends SheetSpec { id: number; master: number; template?: NativeTemplate; nameU?: string; sub?: Record<number, SheetSpec>; deleted?: number[]; listOrder?: number; connectionRows?: ConnectionRow[] }
 export interface ResolvedInstance { spec: InstanceSpec; value(key: string, subId?: number): number; point(row: number): [number, number]; childIds: Map<number, number>; xml(): string }
 
 const PLACEMENT = /^(?:PINX|PINY|WIDTH|HEIGHT|LOCPINX|LOCPINY|ANGLE|BEGINX|BEGINY|ENDX|ENDY|CONNECTIONS\..+)$/
@@ -424,8 +441,8 @@ export function resolveInstance(spec: InstanceSpec, nextId: () => number): Resol
     return rows
   }
   const xml = () => {
-    const children = master.children.map((child) => `<Shape ID='${childIds.get(child.id)}' Type='${child.type}' MasterShape='${child.id}'>`
-      + sheetXml(child, spec.sub?.[child.id] ?? {}, (key) => cell(child.id, key), '') + '</Shape>').join('')
+    const children = master.children.map((child) => spec.deleted?.includes(child.id) ? `<Shape Del='1' MasterShape='${child.id}' ID='4294967295'/>`
+      : `<Shape ID='${childIds.get(child.id)}' Type='${child.type}' MasterShape='${child.id}'>` + sheetXml(child, spec.sub?.[child.id] ?? {}, (key) => cell(child.id, key), '') + '</Shape>').join('')
     return `<Shape ID='${spec.id}'${spec.nameU ? ` NameU='${escape(spec.nameU)}' Name='${escape(spec.nameU)}'` : ''} Type='${master.type}' Master='${spec.master}'>`
       + sheetXml(master, spec, (key) => cell(master.id, key), children ? `<Shapes>${children}</Shapes>` : '', appendedRows()) + '</Shape>'
   }

@@ -162,7 +162,7 @@ async function releaseGate(page: Page) {
 async function exportLld(page: Page, testInfo: TestInfo, erd: { name: string; buffer: Buffer }, shot: string) {
   await ready(page)
   await page.getByRole('button', { name: 'ERD → Word', exact: true }).click()
-  await expect(page.getByRole('main', { name: 'Diagram workspace' })).toBeHidden()
+  await expect(page.getByRole('main', { name: 'Diagram workspace', exact: true })).toBeHidden()
   await page.getByLabel('Visio ERD file').setInputFiles({ name: erd.name, mimeType: 'application/vnd.ms-visio.drawing', buffer: erd.buffer })
   await expect(page.getByRole('status')).toContainText('Read ')
   const path = testInfo.outputPath(shot)
@@ -177,6 +177,23 @@ async function exportLld(page: Page, testInfo: TestInfo, erd: { name: string; bu
   const saved = testInfo.outputPath(word.suggestedFilename())
   await word.saveAs(saved)
   return { name: word.suggestedFilename(), zip: await JSZip.loadAsync(await readFile(saved)) }
+}
+
+async function exportConceptual(page: Page, testInfo: TestInfo, erd: { name: string; buffer: Buffer }, shot: string) {
+  await ready(page)
+  await page.getByRole('button', { name: 'ERD → Conceptual', exact: true }).click()
+  await expect(page.getByRole('main', { name: 'Diagram workspace', exact: true })).toBeHidden()
+  await page.getByLabel('ERD for the conceptual diagram').setInputFiles({ name: erd.name, mimeType: 'application/vnd.ms-visio.drawing', buffer: erd.buffer })
+  await expect(page.getByRole('status')).toContainText('Read ')
+  const path = testInfo.outputPath(shot)
+  await page.screenshot({ path, fullPage: true, animations: 'disabled' })
+  await testInfo.attach(shot, { path, contentType: 'image/png' })
+  const visioEvent = page.waitForEvent('download')
+  await page.getByRole('main', { name: 'ERD to conceptual diagram workspace' }).getByRole('button', { name: 'Download Visio', exact: true }).click()
+  const visio = await visioEvent
+  const saved = testInfo.outputPath(visio.suggestedFilename())
+  await visio.saveAs(saved)
+  return { name: visio.suggestedFilename(), zip: await JSZip.loadAsync(await readFile(saved)) }
 }
 
 test('ERD to Word: opens a Visio ERD, reviews descriptions and exports the LLD section', async ({ page }, testInfo) => {
@@ -208,6 +225,46 @@ test('ERD to Word: opens a Visio ERD, reviews descriptions and exports the LLD s
   await assertLayout(page)
 })
 
+test('ERD to conceptual: opens a Visio ERD, reviews entities and relationships and downloads a UML Class diagram', async ({ page }, testInfo) => {
+  const { name, zip } = await exportConceptual(page, testInfo, { name: 'Billing_ERD (1).vsdx', buffer: Buffer.from(await sampleErd()) }, 'conceptual-desktop-1440.png')
+  expect(name).toBe('Billing_Conceptual_Diagram.vsdx')
+  const pageXml = await zip.file('visio/pages/page1.xml')!.async('string')
+  expect(XMLValidator.validate(pageXml)).toBe(true)
+  for (const entity of ['Bill', 'Bill Timeline', 'Payment Notification', 'Payment Matching']) expect(pageXml).toContain(`<Text>${entity}</Text>`)
+  expect(pageXml).not.toContain('Court')
+  const workspace = page.getByRole('main', { name: 'ERD to conceptual diagram workspace' })
+  // Edits flow into the download: a renamed entity, an excluded entity, a relationship kind and the module name.
+  await workspace.getByLabel('Name of bil.Bills', { exact: true }).fill('Invoice')
+  await workspace.getByLabel('Include bill.Payment_Matching').uncheck()
+  await expect(workspace.getByText('Skipped: an entity is excluded')).toHaveCount(1)
+  const kind = workspace.getByLabel('Kind of Invoice to Bill Timeline')
+  await kind.selectOption('association')
+  await workspace.getByLabel('Label of Invoice to Bill Timeline').fill('tracks')
+  await workspace.getByLabel('Module name').fill('Billing Core')
+  const again = page.waitForEvent('download')
+  await workspace.getByRole('button', { name: 'Download Visio', exact: true }).click()
+  const edited = await again
+  expect(edited.suggestedFilename()).toBe('Billing_Core_Conceptual_Diagram.vsdx')
+  const editedXml = await (await JSZip.loadAsync(await readFile(await edited.path()))).file('visio/pages/page1.xml')!.async('string')
+  expect(editedXml).toContain('<Text>Invoice</Text>')
+  expect(editedXml).not.toContain('Payment Matching')
+  expect(editedXml).toContain('<Text>tracks</Text>')
+  await page.setViewportSize({ width: 320, height: 800 })
+  await assertLayout(page)
+  await page.setViewportSize({ width: 1440, height: 1000 })
+  await page.getByRole('button', { name: 'Mermaid → Visio', exact: true }).click()
+  await expect(page.getByRole('textbox', { name: sourceName })).toHaveValue(SAMPLE_CODE)
+})
+
+test('ERD to conceptual with the real Billing ERD (local fixture)', async ({ page }, testInfo) => {
+  test.skip(!existsSync('samples/lld-export/Billing_ERD_v2.vsdx'), 'Client fixture is local only')
+  const { zip } = await exportConceptual(page, testInfo, { name: 'Billing ERD (1).vsdx', buffer: await readFile('samples/lld-export/Billing_ERD_v2.vsdx') }, 'conceptual-billing-1440.png')
+  const pageXml = await zip.file('visio/pages/page1.xml')!.async('string')
+  expect((pageXml.match(/Master='21'/g) ?? []).length).toBe(20)
+  await page.setViewportSize({ width: 320, height: 800 })
+  await assertLayout(page)
+})
+
 test('runs entirely in the browser: no request leaves the app origin in any converter', async ({ page }, testInfo) => {
   const appOrigin = new URL(testInfo.project.use.baseURL!).origin
   const external: string[] = []
@@ -227,6 +284,8 @@ test('runs entirely in the browser: no request leaves the app origin in any conv
   }
   // ERD to Word: parse, generate descriptions, validate and export.
   await exportLld(page, testInfo, { name: 'Billing_ERD.vsdx', buffer: Buffer.from(await sampleErd()) }, 'lld-privacy.png')
+  // ERD to conceptual: parse, derive the model and download the Visio diagram.
+  await exportConceptual(page, testInfo, { name: 'Billing_ERD.vsdx', buffer: Buffer.from(await sampleErd()) }, 'conceptual-privacy.png')
   await page.waitForLoadState('networkidle')
   expect(external, 'Requests to other origins').toEqual([])
 })

@@ -1,0 +1,113 @@
+{
+  "cells": {
+    "ShdwOffsetX": {
+      "V": "0.125",
+      "U": "IN"
+    },
+    "ShdwOffsetY": {
+      "V": "-0.125",
+      "U": "IN"
+    },
+    "PageScale": {
+      "V": "1",
+      "U": "IN"
+    },
+    "DrawingScale": {
+      "V": "1",
+      "U": "IN_F"
+    },
+    "DrawingSizeType": {
+      "V": "3"
+    },
+    "DrawingScaleType": {
+      "V": "0"
+    },
+    "InhibitSnap": {
+      "V": "0"
+    },
+    "PageLockReplace": {
+      "V": "0",
+      "U": "BOOL"
+    },
+    "PageLockDuplicate": {
+      "V": "0",
+      "U": "BOOL"
+    },
+    "UIVisibility": {
+      "V": "0"
+    },
+    "ShdwType": {
+      "V": "0"
+    },
+    "ShdwObliqueAngle": {
+      "V": "0"
+    },
+    "ShdwScaleFactor": {
+      "V": "1"
+    },
+    "DrawingResizeType": {
+      "V": "2"
+    },
+    "PageLeftMargin": {
+      "V": "0.25",
+      "U": "IN"
+    },
+    "PageRightMargin": {
+      "V": "0.25",
+      "U": "IN"
+    },
+    "PageTopMargin": {
+      "V": "0.25",
+      "U": "IN"
+    },
+    "PageBottomMargin": {
+      "V": "0.25",
+      "U": "IN"
+    },
+    "PrintPageOrientation": {
+      "V": "2"
+    },
+    "AvenueSizeX": {
+      "V": "1",
+      "U": "IN"
+    },
+    "AvenueSizeY": {
+      "V": "1",
+      "U": "IN"
+    },
+    "PageShapeSplit": {
+      "V": "1"
+    },
+    "ColorSchemeIndex": {
+      "V": "41"
+    },
+    "EffectSchemeIndex": {
+      "V": "41"
+    },
+    "ConnectorSchemeIndex": {
+      "V": "41"
+    },
+    "FontSchemeIndex": {
+      "V": "41"
+    },
+    "ThemeIndex": {
+      "V": "41"
+    },
+    "XRulerOrigin": {
+      "V": "15"
+    },
+    "YRulerOrigin": {
+      "V": "51.75"
+    },
+    "XGridOrigin": {
+      "V": "15"
+    },
+    "YGridOrigin": {
+      "V": "51.75"
+    }
+  },
+  "sections": [
+    "<Section N='User'><Row N='msvThemeOrder'><Cell N='Value' V='0'/><Cell N='Prompt' V='' F='No Formula'/></Row><Row N='visNavType'><Cell N='Value' V='1'/><Cell N='Prompt' V='' F='No Formula'/></Row></Section>",
+    "<Section N='Layer'><Row IX='0'><Cell N='Name' V='Connector'/><Cell N='Color' V='255'/><Cell N='Status' V='0'/><Cell N='Visible' V='1'/><Cell N='Print' V='1'/><Cell N='Active' V='0'/><Cell N='Lock' V='0'/><Cell N='Snap' V='1'/><Cell N='Glue' V='1'/><Cell N='NameUniv' V='Connector'/><Cell N='ColorTrans' V='0'/></Row><Row IX='1'><Cell N='Name' V='Container'/><Cell N='Color' V='255'/><Cell N='Status' V='0'/><Cell N='Visible' V='1'/><Cell N='Print' V='1'/><Cell N='Active' V='0'/><Cell N='Lock' V='0'/><Cell N='Snap' V='1'/><Cell N='Glue' V='1'/><Cell N='NameUniv' V=''/><Cell N='ColorTrans' V='0'/></Row></Section>"
+  ]
+}

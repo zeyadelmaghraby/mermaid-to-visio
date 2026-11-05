@@ -118,7 +118,7 @@
   .app-header { min-height: 68px; padding: 14px 16px; gap: 8px; }
   .app-header { flex-wrap: wrap; }
   .mode-switch { order: 3; width: 100%; }
-  .mode-switch button { flex: 1; padding: 0 8px; }
+  .mode-switch button { flex: 1 1 0; min-width: 0; height: auto; min-height: 32px; padding: 4px 6px; white-space: normal; line-height: 1.2; }
   .brand { gap: 9px; }
   .brand h1 { font-size: 20px; }
   .brand-mark { width: 32px; height: 32px; flex-basis: 32px; }
