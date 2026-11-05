@@ -33,4 +33,8 @@ export interface LldSchema {
   relationships: LldRelationship[]
 }
 
-export interface ParsedErd extends LldSchema { looseConnectors: LldLooseConnector[] }
+// Crow's-foot line ends of a glued relationship, as Visio arrow indexes: parent 25 one, 30 zero-or-one;
+// child 25 one, 28 one-or-more, 29 zero-or-more, 30 zero-or-one. Undefined when the drawing does not say.
+export interface LldRelationshipEnds extends LldRelationship { parentEnd?: number; childEnd?: number }
+
+export interface ParsedErd extends LldSchema { looseConnectors: LldLooseConnector[]; ends: LldRelationshipEnds[] }

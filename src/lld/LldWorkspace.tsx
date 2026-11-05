@@ -6,26 +6,13 @@ import { buildDocument, OTHER_TITLE, readDescriptions, VIEWS_TITLE, type Descrip
 import { emptyDescriptions, generateDescriptions } from './generate'
 import { validate, type WarningKind } from './validate'
 import type { ParsedErd } from './model'
+import { download, errorText, FILE_LIMIT, fileStem } from '../shared/files'
 import './lld.css'
 
-const FILE_LIMIT = 20 * 1024 * 1024
 const WARNING_TITLES: Record<WarningKind, string> = {
   'missing-description': 'Missing descriptions', 'uncertain-description': 'Descriptions to check', 'unresolved-fk': 'Unresolved foreign keys',
   'loose-connector': 'Loose connectors', 'schema-prefix': 'Schema prefixes', typo: 'Possible typos', 'required-mismatch': 'Required/Optional inconsistencies',
 }
-
-function download(bytes: BlobPart, name: string, type: string) {
-  const url = URL.createObjectURL(new Blob([bytes], { type }))
-  const anchor = document.createElement('a')
-  anchor.href = url
-  anchor.download = name
-  document.body.append(anchor)
-  anchor.click()
-  anchor.remove()
-  window.setTimeout(() => URL.revokeObjectURL(url), 30_000)
-}
-const fileStem = (value: string) => Array.from(value).filter((character) => character.charCodeAt(0) >= 32).join('').replace(/[<>:"/\\|?*]/g, '-').replace(/\s+/g, '_').replace(/^[._]+|[._]+$/g, '') || 'Module'
-const errorText = (error: unknown) => (error instanceof Error ? error.message : 'The operation could not be completed.')
 
 export default function LldWorkspace() {
   const [erd, setErd] = useState<ParsedErd | null>(null)

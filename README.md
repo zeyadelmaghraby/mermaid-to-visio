@@ -1,7 +1,8 @@
 # Mermaid to Visio
 
 A local-first team workspace converting Mermaid sequence diagrams and ER
-diagrams into native, editable Microsoft Visio `.vsdx` files. Visio is not required for conversion;
+diagrams into native, editable Microsoft Visio `.vsdx` files, and Visio ERDs
+into the LLD field description (Word) or a conceptual diagram (Visio). Visio is not required for conversion;
 Microsoft Visio is required to edit downloaded files in Visio.
 
 ## Run Locally
@@ -310,6 +311,39 @@ is never committed; `npm test` runs them where they exist. Committed tests use
 a synthetic ERD with the same edge cases.
 
 
+## ERD → Conceptual (UML Class conceptual diagram)
+
+The **ERD → Conceptual** switch turns a Visio ERD (`.vsdx`) into a conceptual
+diagram in Visio, drawn with the UML Class shapes of the team's conceptual
+template: one rectangle per business entity inside a dashed module boundary,
+joined by glued Composition, Association and Directed Association connectors
+with multiplicities. No AI, keys or services: the rules below run in the
+browser (`src/conceptual/`).
+
+1. **Open Visio ERD**: tables become entities (views are left out) with
+   business names: schema dropped, words spaced and singular
+   (`bil.Bill_Requests_Revenue_Entries` → "Bill Request Revenue Entry").
+2. **Rules** for each ERD relationship (parent → child):
+   - **Composition** ("owns") when the parent owns the child: the child's FK to
+     it is NOT NULL, and when there are several mandatory parents the owner is
+     the one whose name the child extends (`Report` → `Report_Details`).
+     An entity that keeps parts of its own is an aggregate root and is never
+     composed into another one.
+   - **Directed Association** from the child to a pure reference entity (one
+     that is not a root and has no parents of its own).
+   - **Association** otherwise.
+   - Multiplicities: `1` or `0..1` at the parent from the FK's nullability; the
+     child end follows the ERD's crow's foot (`1`, `1..*`, `*`, `0..1`).
+3. **Review**: rename or exclude entities (their relationships are skipped),
+   and change each relationship's kind, direction, label and multiplicities.
+4. **Download Visio** saves `<Module>_Conceptual_Diagram.vsdx`. Entities are
+   placed in layers by ownership; the connectors use walking glue, so moving a
+   rectangle in Visio drags its lines and multiplicities with it.
+
+The masters, styles and themes are copied byte for byte from the conceptual
+template by `scripts/extract-conceptual-template.mjs` (SHA-256 checked); the
+template's own diagram is never read out.
+
 Parsing and conversion run in the browser: no AI calls, diagram uploads,
 analytics, automatic source persistence or external fonts. Reloading discards
 unsaved source. Input is restricted and SVG/CSS filtered before display.
@@ -349,10 +383,10 @@ nonblank images, desktop/mobile layouts and the ER sample download. Mermaid is
 pinned because its sequence and ER DBs are version-specific. KaTeX is overridden to patched 0.18.2;
 rerun tests when updating these dependencies.
 
-Latest results (Node 22.23): 89 committed unit tests (sequence, ER and
-ERD → Word) plus 3 local Billing ERD acceptance tests (the
+Latest results (Node 22.23): 93 committed unit tests (sequence, ER,
+ERD → Word and ERD → Conceptual) plus 3 local Billing ERD acceptance tests (the
 `schema.expected.json` comparison is skipped until that golden file is added),
-lint, `tsc -b` and `vite build` all pass; the 14 browser workflows, including
+lint, `tsc -b` and `vite build` all pass; the 16 browser workflows (2 of them use the local Billing ERD), including
 a check that no request leaves the app, pass in Chrome (Edge was not available
 for these runs). No dependencies have changed
 since the earlier zero-finding audit.

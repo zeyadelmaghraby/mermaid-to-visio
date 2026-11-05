@@ -1,5 +1,5 @@
 import JSZip from 'jszip'
-import type { LldColumn, LldLooseConnector, LldRelationship, LldTable, ParsedErd } from './model'
+import type { LldColumn, LldLooseConnector, LldRelationship, LldRelationshipEnds, LldTable, ParsedErd } from './model'
 import { similarity } from './similarity'
 
 const NS = 'http://schemas.microsoft.com/office/visio/2012/main'
@@ -125,6 +125,7 @@ export async function parseErd(bytes: ArrayBuffer | Uint8Array, source: string):
   const tables: LldTable[] = []
   const relationships: LldRelationship[] = []
   const looseConnectors: LldLooseConnector[] = []
+  const ends: LldRelationshipEnds[] = []
   for (const file of pageFiles) {
     const doc = parser.parseFromString(await zip.file(file)!.async('string'), 'application/xml')
     if (doc.getElementsByTagName('parsererror').length) throw new Error(`${file} is not well-formed XML.`)
@@ -149,19 +150,22 @@ export async function parseErd(bytes: ArrayBuffer | Uint8Array, source: string):
       for (const element of [shape, ...Array.from(shape.getElementsByTagNameNS(NS, 'Shape'))]) owner.set(element.getAttribute('ID')!, fullName)
     }
     const connects = child(root, 'Connects')
-    const ends = new Map<string, { parent?: string; child?: string }>()
+    const glued = new Map<string, { parent?: string; child?: string }>()
     for (const connect of connects ? children(connects, 'Connect') : []) {
       const from = connect.getAttribute('FromSheet')!, cell = connect.getAttribute('FromCell')
       if (cell !== 'BeginX' && cell !== 'EndX') continue
-      const entry = ends.get(from) ?? {}
-      ends.set(from, entry)
+      const entry = glued.get(from) ?? {}
+      glued.set(from, entry)
       const entity = owner.get(connect.getAttribute('ToSheet')!)
       if (cell === 'BeginX') entry.parent = entity
       else entry.child = entity
     }
-    for (const [id, { parent, child: childName }] of ends) {
-      if (parent && childName) relationships.push({ parent, child: childName })
-      else looseConnectors.push({ id, page, parent, child: childName })
+    const connectorShapes = new Map((shapes ? children(shapes, 'Shape') : []).map((shape) => [shape.getAttribute('ID')!, shape]))
+    for (const [id, { parent, child: childName }] of glued) {
+      if (parent && childName) {
+        relationships.push({ parent, child: childName })
+        ends.push({ parent, child: childName, ...lineEnds(connectorShapes.get(id)) })
+      } else looseConnectors.push({ id, page, parent, child: childName })
     }
   }
   const byName = new Map(tables.map((table) => [table.full_name, table]))
@@ -173,7 +177,23 @@ export async function parseErd(bytes: ArrayBuffer | Uint8Array, source: string):
       if (ref) column.ref = ref
     }
   }
-  return { source, tables, relationships, looseConnectors }
+  return { source, tables, relationships, looseConnectors, ends }
+}
+
+// Line ends drawn on a Relationship: its cached BeginArrow/EndArrow, else the database User cells behind them.
+function lineEnds(shape: Element | undefined): { parentEnd?: number; childEnd?: number } {
+  if (!shape) return {}
+  const cell = (name: string) => children(shape, 'Cell').find((entry) => entry.getAttribute('N') === name)?.getAttribute('V')
+  const user = (name: string) => {
+    const section = children(shape, 'Section').find((entry) => entry.getAttribute('N') === 'User')
+    const row = section && children(section, 'Row').find((entry) => entry.getAttribute('N') === name)
+    return row && children(row, 'Cell').find((entry) => entry.getAttribute('N') === 'Value')?.getAttribute('V')
+  }
+  const number = (value: string | null | undefined) => (value !== undefined && value !== null && value !== '' && Number.isFinite(Number(value)) ? Number(value) : undefined)
+  const optional = number(user('Optional'))
+  const parentEnd = number(cell('BeginArrow')) ?? (optional === undefined ? undefined : optional ? 30 : 25)
+  const childEnd = number(cell('EndArrow')) ?? number(user('DBCardinality'))
+  return { ...(parentEnd ? { parentEnd } : {}), ...(childEnd ? { childEnd } : {}) }
 }
 
 async function pageNameIndex(zip: JSZip, parser: DOMParser) {

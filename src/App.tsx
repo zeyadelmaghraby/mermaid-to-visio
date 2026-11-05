@@ -6,6 +6,7 @@ import {
 import { detectKind, generateVsdx, prepareDiagram } from './converter'
 import { ER_SAMPLE_CODE, SAMPLE_CODE } from './sample'
 import LldWorkspace from './lld/LldWorkspace'
+import ConceptualWorkspace from './conceptual/ConceptualWorkspace'
 import './App.css'
 
 const SOURCE_LIMIT = 100_000
@@ -124,8 +125,9 @@ function App() {
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
   const [tab, setTab] = useState<'editor' | 'preview'>('editor')
-  const [mode, setMode] = useState<'mermaid' | 'lld'>('mermaid')
+  const [mode, setMode] = useState<'mermaid' | 'lld' | 'conceptual'>('mermaid')
   const [lldOpened, setLldOpened] = useState(false)
+  const [conceptOpened, setConceptOpened] = useState(false)
   const [fit, setFit] = useState(true)
   const [zoom, setZoom] = useState(1)
   const [viewport, setViewport] = useState({ width: 0, height: 0 })
@@ -296,6 +298,7 @@ function App() {
         <div className="mode-switch" role="group" aria-label="Converter">
           <button type="button" aria-pressed={mode === 'mermaid'} onClick={() => setMode('mermaid')}>Mermaid → Visio</button>
           <button type="button" aria-pressed={mode === 'lld'} onClick={() => { setMode('lld'); setLldOpened(true) }}>ERD → Word</button>
+          <button type="button" aria-pressed={mode === 'conceptual'} onClick={() => { setMode('conceptual'); setConceptOpened(true) }}>ERD → Conceptual</button>
         </div>
         <span className="privacy-status"><LockKeyhole size={14} aria-hidden="true" />Local only</span>
       </header>
@@ -398,6 +401,7 @@ function App() {
         </div>
       </main>
       {lldOpened && <div hidden={mode !== 'lld'}><LldWorkspace /></div>}
+      {conceptOpened && <div hidden={mode !== 'conceptual'}><ConceptualWorkspace /></div>}
     </div>
   )
 }
